@@ -192,7 +192,10 @@ pg_prewarm(PG_FUNCTION_ARGS)
 			Buffer		buf;
 
 			CHECK_FOR_INTERRUPTS();
-			buf = ReadBufferExtended(rel, forkNumber, block, RBM_NORMAL, NULL);
+			//buf = ReadBufferExtended(rel, forkNumber, block, RBM_NORMAL, NULL);
+			buf = polar_bulk_read_buffer_extended(rel, MAIN_FORKNUM, block,
+														RBM_NORMAL, NULL,
+														64);
 			ReleaseBuffer(buf);
 			++blocks_done;
 		}
