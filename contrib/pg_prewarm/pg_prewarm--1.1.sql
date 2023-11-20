@@ -12,3 +12,14 @@ CREATE FUNCTION pg_prewarm(regclass,
 RETURNS int8
 AS 'MODULE_PATHNAME', 'pg_prewarm'
 LANGUAGE C PARALLEL SAFE;
+
+
+CREATE OR REPLACE FUNCTION pg_clean_all_cache()
+RETURNS VOID
+AS 'MODULE_PATHNAME', 'pg_clean_all_cache'
+LANGUAGE C;
+
+CREATE OR REPLACE FUNCTION pg_clean_rel_cache(relation regclass, fork text default null)
+RETURNS VOID
+AS 'MODULE_PATHNAME', 'pg_clean_rel_cache'
+LANGUAGE C;
