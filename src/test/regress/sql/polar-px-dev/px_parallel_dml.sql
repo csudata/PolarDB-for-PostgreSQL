@@ -1,10 +1,27 @@
 -- config
 /*--POLAR_ENABLE_PX*/
+set client_min_messages to error;
 set polar_enable_px = 1;
 set polar_px_enable_insert_select = 1;
 set polar_px_optimizer_enable_dml_constraints = 1;
 set polar_px_enable_insert_order_sensitive = 0;
 
+create function dml_explain_filter(text) returns setof text
+language plpgsql as
+$$
+declare
+    ln text;
+begin
+    for ln in execute $1
+    loop
+        -- Replace any actual rows with just 'N'
+        ln := regexp_replace(ln, 'actual rows=\d+\M', 'actual rows=N', 'g');
+        -- In sort output, the above won't match units-suffixed numbers
+        ln := regexp_replace(ln, '\m\d+kB', 'NkB', 'g');
+        return next ln;
+    end loop;
+end;
+$$;
 
 -- create table
 \i sql/polar-px-dev/px_parallel_dml_init.sql
@@ -53,3 +70,5 @@ set polar_px_insert_dop_num = 6;
 set polar_px_insert_dop_num = 10;
 \i sql/polar-px-dev/px_parallel_dml_init.sql
 \i sql/polar-px-dev/px_parallel_dml_base.sql
+
+reset client_min_messages;

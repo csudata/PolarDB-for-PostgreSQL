@@ -39,11 +39,6 @@ typedef struct PxNodes PxNodes;
  */
 #define COMPONENT_DBS_MAX_ADDRS (8)
 
-/* POLAR px: For Multi Insert */
-#define RW_SEGMENT				(-10002)
-#define RW_COUNTER_START		(100000)
-/* POLAR end */
-
 typedef struct PxNodeConfigEntry
 {
 	/* copy of entry in px_node_configuration */
@@ -100,9 +95,6 @@ struct PxNodes
 	int			numActivePXs;
 	int			numIdlePXs;
 	int			pxCounter;
-	/* POLAR px */
-	int			rwCounter;
-	/* POLAR end */
 	List	   *freeCounterList;
 };
 
@@ -143,7 +135,7 @@ extern void px_cleanup(int code, Datum arg pg_attribute_unused());
  */
 PxNodes *pxnode_getPxNodes(void);
 
-PxNodeInfo *pxnode_getPxNodeInfo(int contentId);
+PxNodeInfo *pxnode_getPxNodeInfo(int contentId, SegmentType segmentType);
 
 struct PxWorkerDescriptor *pxnode_allocateIdlePX(int logicalWorkerIdx, int logicalTotalWorkers, SegmentType segmentType);
 

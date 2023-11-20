@@ -22,9 +22,6 @@
 
 /* POLAR px */
 #define MAX_INSERT_DOP_NUM ULONG(128)
-#define MAX_UPDATE_DOP_NUM ULONG(128)
-#define MAX_SELECT_DOP_NUM ULONG(128)
-#define MAX_DELETE_DOP_NUM ULONG(128)
 /* POLAR px */
 
 namespace gpopt
@@ -59,17 +56,6 @@ private:
 	/* POLAR px */
 	ULONG m_ulInsertDopNum;
 
-	ULONG m_ulUpdateDopNum;
-
-	ULONG m_ulSelectDopNum;
-
-	ULONG m_ulDeleteDopNum;
-
-	BOOL m_fRemoveUpdateRedundantMotion;
-
-	BOOL m_fRemoveDeleteRedundantMotion;
-	/* POLAR px */
-
 public:
 	CHint(const CHint &) = delete;
 
@@ -80,12 +66,7 @@ public:
 		  ULONG broadcast_threshold, BOOL enforce_constraint_on_dml,
 		  ULONG push_group_by_below_setop_threshold,
 		  /* POLAR px */
-		  ULONG insert_dop_num,
-		  ULONG update_dop_num,
-		  ULONG select_dop_num,
-		  ULONG delete_dop_num,
-		  BOOL	remove_update_redundant_motion,
-		  BOOL	remove_delete_redundant_motion)
+		  ULONG insert_dop_num)
 		: m_ulMinNumOfPartsToRequireSortOnInsert(
 			  min_num_of_parts_to_require_sort_on_insert),
 		  m_ulJoinArityForAssociativityCommutativity(
@@ -97,12 +78,7 @@ public:
 		  m_ulPushGroupByBelowSetopThreshold(
 			  push_group_by_below_setop_threshold),
 			/* POLAR px */
-		  m_ulInsertDopNum(insert_dop_num),
-		  m_ulUpdateDopNum(update_dop_num),
-		  m_ulSelectDopNum(select_dop_num),
-		  m_ulDeleteDopNum(delete_dop_num),
-		  m_fRemoveUpdateRedundantMotion(remove_update_redundant_motion),
-		  m_fRemoveDeleteRedundantMotion(remove_delete_redundant_motion)
+		  m_ulInsertDopNum(insert_dop_num)
 	{
 	}
 
@@ -175,37 +151,6 @@ public:
 		return m_ulInsertDopNum;
 	}
 
-	ULONG
-	UlUpdateDopNum() const
-	{
-		return m_ulUpdateDopNum;
-	}
-
-	ULONG
-	UlSelectDopNum() const
-	{
-		return m_ulSelectDopNum;
-	}
-
-	ULONG
-	UlDeleteDopNum() const
-	{
-		return m_ulDeleteDopNum;
-	}
-
-	BOOL
-	FRemoveUpdateRedundantMotion() const
-	{
-		return m_fRemoveUpdateRedundantMotion;
-	}
-
-	BOOL
-	FRemoveDeleteRedundantMotion() const
-	{
-		return m_fRemoveDeleteRedundantMotion;
-	}
-	/* POLAR px */
-
 	// generate default hint configurations, which disables sort during insert on
 	// append only row-oriented partitioned tables by default
 	static CHint *
@@ -220,13 +165,7 @@ public:
 			true,								/* enforce_constraint_on_dml */
 			PUSH_GROUP_BY_BELOW_SETOP_THRESHOLD, /* push_group_by_below_setop_threshold */
 			/* POLAR px */
-			MAX_INSERT_DOP_NUM,
-			MAX_UPDATE_DOP_NUM,
-			MAX_SELECT_DOP_NUM,
-			MAX_DELETE_DOP_NUM,
-			true,
-			true
-			/* POLAR px */
+			MAX_INSERT_DOP_NUM
 		);
 	}
 

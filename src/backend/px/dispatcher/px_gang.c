@@ -354,7 +354,7 @@ makeOptions(void)
 
 	Assert(px_role == PX_ROLE_QC);
 
-	qdinfo = pxnode_getPxNodeInfo(MASTER_CONTENT_ID);
+	qdinfo = pxnode_getPxNodeInfo(MASTER_CONTENT_ID, SEGMENTTYPE_ANY);
 	appendStringInfo(&string, " -c polar_px_qc_hostname=%s", qdinfo->config->hostip);
 	appendStringInfo(&string, " -c polar_px_qc_port=%d", qdinfo->config->port);
 
@@ -639,7 +639,7 @@ getPxProcessesForQC(int isPrimary)
 		elog(FATAL, "getPxProcessesForQC: unsupported request for master mirror process");
 	}
 
-	qdinfo = pxnode_getPxNodeInfo(MASTER_CONTENT_ID);
+	qdinfo = pxnode_getPxNodeInfo(MASTER_CONTENT_ID, SEGMENTTYPE_ANY);
 
 	Assert(qdinfo->config->node_idx == -1);
 	Assert(qdinfo->config->hostip != NULL);

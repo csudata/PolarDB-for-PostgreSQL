@@ -221,7 +221,7 @@ FillSliceGangInfo(ExecSlice *slice, int numsegments, DirectDispatchInfo *dd)
 		slice->segments = NIL;
 
 		for(k = 0;k < numsegments; k++)
-			slice->segments = lappend_int(slice->segments,RW_SEGMENT);
+			slice->segments = lappend_int(slice->segments, k);
 		break;
 	case GANGTYPE_PRIMARY_READER:
 		slice->planNumSegments = numsegments;

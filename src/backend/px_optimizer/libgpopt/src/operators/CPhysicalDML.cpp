@@ -284,42 +284,10 @@ CPhysicalDML::PdsRequired(CMemoryPool *mp,
 		else
 			return GPOS_NEW(mp) CDistributionSpecStrictRandom();
 	}
-	else if (CLogicalDML::EdmlUpdate == m_edmlop)
+	// Update and Delete
+	else if(CLogicalDML::EdmlUpdate == m_edmlop || CLogicalDML::EdmlDelete == m_edmlop)
 	{
-		bool remove_redundant_motion = optimizer_config->GetHint()->FRemoveUpdateRedundantMotion();
-		ULONG update_dop_num = optimizer_config->GetHint()->UlUpdateDopNum();
-		ULONG select_dop_num = optimizer_config->GetHint()->UlSelectDopNum();
-		if (!remove_redundant_motion)
-			return GPOS_NEW(mp) CDistributionSpecStrictRandom();
-		else
-		{
-			if (update_dop_num == select_dop_num)
-			{
-				m_pds->AddRef();
-				return m_pds;
-			}
-			else
-				return GPOS_NEW(mp) CDistributionSpecStrictRandom();
-		}
-	}
-	else if (CLogicalDML::EdmlDelete == m_edmlop)
-	{
-		/* delete */
-		bool remove_redundant_motion = optimizer_config->GetHint()->FRemoveDeleteRedundantMotion();
-		ULONG delete_dop_num = optimizer_config->GetHint()->UlDeleteDopNum();
-		ULONG select_dop_num = optimizer_config->GetHint()->UlSelectDopNum();
-		if (!remove_redundant_motion)
-			return GPOS_NEW(mp) CDistributionSpecStrictRandom();
-		else
-		{
-			if (delete_dop_num == select_dop_num)
-			{
-				m_pds->AddRef();
-				return m_pds;
-			}
-			else
-				return GPOS_NEW(mp) CDistributionSpecStrictRandom();
-		}
+		return GPOS_NEW(mp) CDistributionSpecStrictRandom();
 	}
 	else
 	{

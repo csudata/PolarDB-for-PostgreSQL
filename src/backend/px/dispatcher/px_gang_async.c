@@ -138,7 +138,7 @@ create_gang_retry:
 			options = makeOptions();
 
 			/* start connection in asynchronous way */
-			pxconn_doConnectStart(pxWorkerDesc, pxid, options);
+			pxconn_doConnectStart(pxWorkerDesc, pxid, options, segmentType);
 
 			if (pxconn_isBadConnection(pxWorkerDesc))
 				ereport(ERROR, (errcode(ERRCODE_PX_INTERCONNECTION_ERROR),

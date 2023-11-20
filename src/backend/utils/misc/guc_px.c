@@ -109,10 +109,8 @@ bool		px_enable_insert_from_tableless;
 bool 		px_enable_insert_order_sensitive;
 bool		px_enable_update;
 int			px_update_dop_num;
-bool		px_enable_remove_update_redundant_motion;
 bool		px_enable_delete;
 int			px_delete_dop_num;
-bool		px_enable_remove_delete_redundant_motion;
 bool		px_optimizer_remove_superfluous_order;
 
 
@@ -1947,31 +1945,11 @@ struct config_bool ConfigureNamesBool_px[] =
 		NULL, NULL, NULL
 	},
 	{
-		{"polar_px_enable_remove_update_redundant_motion", PGC_USERSET, UNGROUPED,
-			gettext_noop("This guc remove update redundant motion when update_dop_num == "
-							"read_dop_num."),
-			NULL
-		},
-		&px_enable_remove_update_redundant_motion,
-		false,
-		NULL, NULL, NULL
-	},
-	{
 		{"polar_px_enable_delete", PGC_USERSET, UNGROUPED,
 			gettext_noop("This guc allows parallel delete."),
 			NULL
 		},
 		&px_enable_delete,
-		false,
-		NULL, NULL, NULL
-	},
-	{
-		{"polar_px_enable_remove_delete_redundant_motion", PGC_USERSET, UNGROUPED,
-			gettext_noop("This guc remove delete redundant motion when delete_dop_num == "
-							"read_dop_num."),
-			NULL
-		},
-		&px_enable_remove_delete_redundant_motion,
 		false,
 		NULL, NULL, NULL
 	},

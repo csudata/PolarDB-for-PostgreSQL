@@ -72,7 +72,7 @@ static int				px_node_configs_generation = POLAR_CLUSTER_INFO_INVALID_GENERATION
 static MemoryContext	px_worker_context = NULL;
 static PxNodeConfigEntry *px_node_configs = NULL;
 
-static int		nextPXIdentifer(PxNodes *px_nodes, bool isRW);
+static int		nextPXIdentifer(PxNodes *px_nodes);
 static void		GeneratePxNodeConfigs(void);
 
 /* NB: all extern function should switch to this context */
@@ -249,7 +249,7 @@ next:
 	qc_config->node_idx = -1;
 	qc_config->dop = 1;
 	qc_config->port = PostPortNumber;
-	qc_config->hostip = "127.0.0.1";
+	qc_config->hostip = "";
 
 	px_node_configs = configs;
 	px_node_configs_size = idx;
@@ -305,7 +305,6 @@ pxnode_getPxNodes()
 	px_nodes->numActivePXs = 0;
 	px_nodes->numIdlePXs = 0;
 	px_nodes->pxCounter = 0;
-	px_nodes->rwCounter = RW_COUNTER_START;
 	px_nodes->freeCounterList = NIL;
 
 	px_nodes->pxInfo =
@@ -368,10 +367,10 @@ pxnode_allocateIdlePX(int logicalWorkerIdx, int logicalTotalWorkers, SegmentType
 
 	if (logicalWorkerIdx == -1)
 	{
-		pxinfo = pxnode_getPxNodeInfo(-1);
+		pxinfo = pxnode_getPxNodeInfo(-1, segmentType);
 		logicalTotalWorkers = getPxWorkerCount();
 	} else
-		pxinfo = pxnode_getPxNodeInfo(logicalWorkerIdx);
+		pxinfo = pxnode_getPxNodeInfo(logicalWorkerIdx, segmentType);
 
 	if (pxinfo == NULL)
 	{
@@ -414,21 +413,10 @@ pxnode_allocateIdlePX(int logicalWorkerIdx, int logicalTotalWorkers, SegmentType
 	/* POLAR px */
 	if (!pxWorkerDesc)
 	{
-		if (RW_SEGMENT == logicalWorkerIdx)
-		{
-			/* RW */
-			pxWorkerDesc = pxconn_createWorkerDescriptor(pxinfo,
-									nextPXIdentifer(pxinfo->px_nodes, true),
-									MASTER_CONTENT_ID,
-									logicalTotalWorkers);
-		}
-		else
-		{
-			pxWorkerDesc = pxconn_createWorkerDescriptor(pxinfo,
-									nextPXIdentifer(pxinfo->px_nodes, false),
-									logicalWorkerIdx,
-									logicalTotalWorkers);
-		}
+		pxWorkerDesc = pxconn_createWorkerDescriptor(pxinfo,
+													 nextPXIdentifer(pxinfo->px_nodes),
+													 logicalWorkerIdx,
+													 logicalTotalWorkers);
 	}
 	/* POLAR end */
 
@@ -504,33 +492,25 @@ destroy_segdb:
 }
 
 static int
-nextPXIdentifer(PxNodes *px_nodes, bool isRW)
+nextPXIdentifer(PxNodes *px_nodes)
 {
 	int			result;
-	if (isRW)
-	{
-		return px_nodes->rwCounter++;
-	}
-	else
-	{
-		if (!px_nodes->freeCounterList)
-		{
-			result = px_nodes->pxCounter;
-			px_nodes->pxCounter = (px_nodes->pxCounter + 1) % RW_COUNTER_START;
-			return result;
-		}
 
-		result = linitial_int(px_nodes->freeCounterList);
-		px_nodes->freeCounterList = list_delete_first(px_nodes->freeCounterList);
+	if (!px_nodes->freeCounterList)
+	{
+		result = px_nodes->pxCounter++;
 		return result;
 	}
+	result = linitial_int(px_nodes->freeCounterList);
+	px_nodes->freeCounterList = list_delete_first(px_nodes->freeCounterList);
+	return result;
 }
 
 /*
  * Find PxNodeInfo in the array by segment index.
  */
 PxNodeInfo *
-pxnode_getPxNodeInfo(int contentId)
+pxnode_getPxNodeInfo(int contentId, SegmentType segmentType)
 {
 	PxNodeInfo *pxInfo = NULL;
 	PxNodes	   *px_nodes;
@@ -546,7 +526,7 @@ pxnode_getPxNodeInfo(int contentId)
 	 *	Because the IP and Port of the RW and QC nodes are exactly the same
 	 *  , qcInfo can be used directly.
 	 */
-	if (RW_SEGMENT == contentId)
+	if (SEGMENTTYPE_EXPLICT_WRITER == segmentType)
 		return px_nodes->qcInfo;
 
 	if (contentId < 0)

@@ -24,9 +24,6 @@ using namespace gpopt;
 
 /* POLAR px */
 #define DEFAULT_INSERT_DOP_NUM ULONG(1)
-#define DEFAULT_UPDATE_DOP_NUM ULONG(1)
-#define DEFAULT_SELECT_DOP_NUM ULONG(1)
-#define DEFAULT_DELETE_DOP_NUM ULONG(1)
 /* POLAR px */
 
 XERCES_CPP_NAMESPACE_USE
@@ -125,12 +122,7 @@ CParseHandlerHint::StartElement(const XMLCh *const,	 //element_uri,
 		join_order_dp_threshold, broadcast_threshold, enforce_constraint_on_dml,
 		push_group_by_below_setop_threshold,
 		/* POLAR px */
-		DEFAULT_INSERT_DOP_NUM,
-		DEFAULT_UPDATE_DOP_NUM,
-		DEFAULT_SELECT_DOP_NUM,
-		DEFAULT_DELETE_DOP_NUM,
-		true,
-		true);
+		DEFAULT_INSERT_DOP_NUM);
 }
 
 //---------------------------------------------------------------------------

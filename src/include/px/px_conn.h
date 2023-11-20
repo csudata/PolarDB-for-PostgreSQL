@@ -18,6 +18,7 @@
 
 
 typedef struct SnapshotData SnapshotData;
+typedef enum SegmentType SegmentType;
 
 /* --------------------------------------------------------------------------------------------------
  * Structure for segment database definition and working values
@@ -69,7 +70,8 @@ void pxconn_termWorkerDescriptor(PxWorkerDescriptor *pxWorkerDesc);
 /* Connect to a PX as a client via libpq. */
 void pxconn_doConnectStart(PxWorkerDescriptor *pxWorkerDesc,
 					   const char *pxid,
-					   const char *options);
+					   const char *options,
+					   SegmentType segmentType);
 void pxconn_doConnectComplete(PxWorkerDescriptor *pxWorkerDesc);
 
 /*

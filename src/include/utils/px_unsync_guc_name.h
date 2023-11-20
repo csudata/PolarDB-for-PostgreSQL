@@ -692,8 +692,6 @@
 		"polar_px_enable_result_hash_filter",
 		"polar_px_enable_tableless_scan",
 		"polar_px_enable_update",
-		"polar_px_enable_remove_delete_redundant_motion",
-		"polar_px_enable_remove_update_redundant_motion",
 		"polar_px_ignore_unusable_nodes",
 		"polar_px_insert_dop_num",
 		"polar_px_optimizer_remove_superfluous_order",

@@ -4,9 +4,9 @@ EXPLAIN (VERBOSE, COSTS OFF) insert into px_parallel_dml_t2 select generate_seri
 insert into px_parallel_dml_t2 select generate_series(1,60),generate_series(1,60);
 select count(*) from px_parallel_dml_t1;
 select count(*) from px_parallel_dml_t2;
-EXPLAIN (VERBOSE, COSTS OFF) insert into px_parallel_dml_t1 select c2, c1 from px_parallel_dml_t1;
+select dml_explain_filter('EXPLAIN (VERBOSE, COSTS OFF, TIMING OFF, SUMMARY OFF, ANALYZE) insert into px_parallel_dml_t1 select c2, c1 from px_parallel_dml_t1');
 insert into px_parallel_dml_t2 select c2, c1 from px_parallel_dml_t1;
-EXPLAIN (VERBOSE, COSTS OFF) insert into px_parallel_dml_t1 select c2, c1 from px_parallel_dml_t2;
+select dml_explain_filter('EXPLAIN (VERBOSE, COSTS OFF, TIMING OFF, SUMMARY OFF, ANALYZE) insert into px_parallel_dml_t1 select c2, c1 from px_parallel_dml_t2');
 insert into px_parallel_dml_t1 select c2, c1 from px_parallel_dml_t2;
 select count(*) from px_parallel_dml_t1;
 select count(*) from px_parallel_dml_t2;

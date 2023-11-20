@@ -1029,10 +1029,8 @@ extern bool	px_enable_insert_order_sensitive;
 extern bool px_enable_partitionwise_join;
 extern bool px_enable_update;
 extern int	px_update_dop_num;
-extern bool px_enable_remove_update_redundant_motion;
 extern bool px_enable_delete;
 extern int	px_delete_dop_num;
-extern bool px_enable_remove_delete_redundant_motion;
 extern bool px_optimizer_remove_superfluous_order;
 
 extern bool	px_allow_strat_seqscan;

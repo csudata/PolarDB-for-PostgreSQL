@@ -2354,13 +2354,17 @@ exec_execute_message(const char *portal_name, long max_rows)
 			pq_putemptymessage('s');
 	}
 
+	buf.data = NULL;
+
 	if (to_log)
 	{
 	    /* POLAR: get errmsg params string, we must free it in the last */
 		// It needs to malloc and free twice, not so efficiency.
 	    params_string = polar_get_errmsg_params(portalParams);
 	
+		/* POLAR: inital buf used by logging info. */
 		initStringInfo(&buf);
+
 		if (polar_enable_log_search_path)
 			appendStringInfo(&buf, "/*polardb %s polardb*/ ", namespace_search_path);
 
@@ -2491,7 +2495,7 @@ exec_execute_message(const char *portal_name, long max_rows)
   		pfree(params_string);
   	/* POLAR end */
 
-	if (buf.data)
+	if (to_log && buf.data)
 		pfree(buf.data);
 
   	if (save_log_statement_stats)

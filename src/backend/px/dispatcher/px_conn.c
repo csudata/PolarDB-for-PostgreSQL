@@ -99,10 +99,7 @@ pxconn_createWorkerDescriptor(struct PxNodeInfo *pxinfo, int identifier,
 	pxWorkerDesc->identifier = identifier;
 	pxWorkerDesc->logicalWorkerInfo.total_count = logicalTotalWorkers;
 	/* POLAR px */
-	if (MASTER_CONTENT_ID == logicalWorkerIdx && RW_COUNTER_START <= identifier)
-		pxWorkerDesc->logicalWorkerInfo.idx = (identifier % RW_COUNTER_START) % logicalTotalWorkers;
-	else
-		pxWorkerDesc->logicalWorkerInfo.idx = logicalWorkerIdx;
+	pxWorkerDesc->logicalWorkerInfo.idx = logicalWorkerIdx;
 	/* POLAR end */
 
 	MemoryContextSwitchTo(oldContext);
@@ -118,10 +115,7 @@ pxconn_termWorkerDescriptor(PxWorkerDescriptor *pxWorkerDesc)
 	px_nodes = pxWorkerDesc->pxNodeInfo->px_nodes;
 
 	/* put px identifier to free list for reuse */
-	if (RW_COUNTER_START > pxWorkerDesc->identifier)
-	{
-		px_nodes->freeCounterList = lappend_int(px_nodes->freeCounterList, pxWorkerDesc->identifier);
-	}
+	px_nodes->freeCounterList = lappend_int(px_nodes->freeCounterList, pxWorkerDesc->identifier);
 
 	pxconn_disconnect(pxWorkerDesc);
 
@@ -139,7 +133,8 @@ pxconn_termWorkerDescriptor(PxWorkerDescriptor *pxWorkerDesc)
 void
 pxconn_doConnectStart(PxWorkerDescriptor *pxWorkerDesc,
 					   const char *pxid,
-					   const char *options)
+					   const char *options,
+					   SegmentType segmentType)
 {
 #define MAX_KEYWORDS 10
 #define MAX_INT_STRING_LEN 20
@@ -148,6 +143,7 @@ pxconn_doConnectStart(PxWorkerDescriptor *pxWorkerDesc,
 	const char *values[MAX_KEYWORDS];
 	char		portstr[MAX_INT_STRING_LEN];
 	int			nkeywords = 0;
+	bool		should_be_localhost = false;
 
 	keywords[nkeywords] = "pxid";
 	values[nkeywords] = pxid;
@@ -170,10 +166,10 @@ pxconn_doConnectStart(PxWorkerDescriptor *pxWorkerDesc,
 	 *
 	 * For other PX connections, we set "hostaddr". "host" is not used.
 	 */
-	if ((px_role == PX_ROLE_QC &&
-		(pxWorkerDesc->logicalWorkerInfo.idx == MASTER_CONTENT_ID ||
-		 pxWorkerDesc->identifier >= RW_COUNTER_START)) ||
-		 FAULT_COND(SIMPLE_FAULT_INJECTOR("hostaddr_info") == FaultInjectorTypeEnable))
+	/* When EntryDB or pdml, hostaddr should be localhost(127.0.0.1) */
+	should_be_localhost = (pxWorkerDesc->logicalWorkerInfo.idx == MASTER_CONTENT_ID)
+		|| (segmentType == SEGMENTTYPE_EXPLICT_WRITER);
+	if (px_role == PX_ROLE_QC && should_be_localhost)
 	{
 		keywords[nkeywords] = "hostaddr";
 		values[nkeywords] = "127.0.0.1";

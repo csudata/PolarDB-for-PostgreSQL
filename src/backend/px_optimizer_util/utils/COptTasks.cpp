@@ -445,11 +445,6 @@ COptTasks::CreateOptimizerConfig
 	ULONG push_group_by_below_setop_threshold = (ULONG) px_optimizer_push_group_by_below_setop_threshold;
 	/* POLAR px */
 	ULONG insert_dop_num = (ULONG) local_px_insert_dop_num;
-	ULONG update_dop_num = (ULONG) px_update_dop_num;
-	ULONG select_dop_num = (ULONG) getPxWorkerCount();
-	ULONG delete_dop_num = (ULONG) px_delete_dop_num;
-	BOOL  remove_update_redundant_motion = px_enable_remove_update_redundant_motion;
-	BOOL  remove_delete_redundant_motion = px_enable_remove_delete_redundant_motion;
 	/* POLAR end */
 
 	return GPOS_NEW(mp) COptimizerConfig
@@ -469,12 +464,7 @@ COptTasks::CreateOptimizerConfig
 								      * enforce them ourselves in the executor */
 								push_group_by_below_setop_threshold,
 								/* POLAR px */
-								insert_dop_num,
-								update_dop_num,
-								select_dop_num,
-								delete_dop_num,
-								remove_update_redundant_motion,
-								remove_delete_redundant_motion
+								insert_dop_num
 								/* POLAR end */
 								),
 						GPOS_NEW(mp) CWindowOids(OID(F_WINDOW_ROW_NUMBER), OID(F_WINDOW_RANK))

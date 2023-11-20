@@ -1,22 +1,36 @@
 -- config
 /*--POLAR_ENABLE_PX*/
+set client_min_messages to error;
 set polar_enable_px = 1;
 set polar_px_enable_insert_select = 1;
 set polar_px_optimizer_enable_dml_constraints = 1;
 set polar_px_enable_insert_order_sensitive = 0;
+create function dml_explain_filter(text) returns setof text
+language plpgsql as
+$$
+declare
+    ln text;
+begin
+    for ln in execute $1
+    loop
+        -- Replace any actual rows with just 'N'
+        ln := regexp_replace(ln, 'actual rows=\d+\M', 'actual rows=N', 'g');
+        -- In sort output, the above won't match units-suffixed numbers
+        ln := regexp_replace(ln, '\m\d+kB', 'NkB', 'g');
+        return next ln;
+    end loop;
+end;
+$$;
 -- create table
 \i sql/polar-px-dev/px_parallel_dml_init.sql
 -- create normal table
 drop table if exists px_parallel_dml_t1 cascade;
-psql:sql/polar-px-dev/px_parallel_dml_init.sql:2: NOTICE:  table "px_parallel_dml_t1" does not exist, skipping
 CREATE TABLE px_parallel_dml_t1 (c1 int, c2 int) ;
 insert into px_parallel_dml_t1 select generate_series(1,100),generate_series(1,100);
 drop table if exists px_parallel_dml_t2 cascade;
-psql:sql/polar-px-dev/px_parallel_dml_init.sql:6: NOTICE:  table "px_parallel_dml_t2" does not exist, skipping
 CREATE TABLE px_parallel_dml_t2 (c1 int, c2 int) ;
 insert into px_parallel_dml_t2 select generate_series(1,100),generate_series(1,100);
 drop table if exists px_parallel_dml_t3 cascade;
-psql:sql/polar-px-dev/px_parallel_dml_init.sql:10: NOTICE:  table "px_parallel_dml_t3" does not exist, skipping
 CREATE TABLE px_parallel_dml_t3 (c1 int, c2 int) ;
 insert into px_parallel_dml_t3 select generate_series(1,1000),generate_series(1,1000);
 select count(*) from px_parallel_dml_t1;
@@ -33,23 +47,18 @@ select count(*) from px_parallel_dml_t2;
 
 -- create partition table
 drop table if exists px_parallel_dml_t0_hash_insert cascade;
-psql:sql/polar-px-dev/px_parallel_dml_init.sql:19: NOTICE:  table "px_parallel_dml_t0_hash_insert" does not exist, skipping
 CREATE TABLE px_parallel_dml_t0_hash_insert (id int, value int) PARTITION BY HASH(id);
 drop table if exists px_parallel_dml_t0_insert cascade;
-psql:sql/polar-px-dev/px_parallel_dml_init.sql:21: NOTICE:  table "px_parallel_dml_t0_insert" does not exist, skipping
 CREATE TABLE px_parallel_dml_t0_insert (id int, value int);
 drop table if exists px_parallel_dml_t0_select_table cascade;
-psql:sql/polar-px-dev/px_parallel_dml_init.sql:23: NOTICE:  table "px_parallel_dml_t0_select_table" does not exist, skipping
 CREATE TABLE px_parallel_dml_t0_select_table (id int, value int);
 insert into px_parallel_dml_t0_select_table select generate_series(1,12000),generate_series(1,12000);
 drop table if exists px_parallel_dml_t0_select_list_table cascade;
-psql:sql/polar-px-dev/px_parallel_dml_init.sql:26: NOTICE:  table "px_parallel_dml_t0_select_list_table" does not exist, skipping
 CREATE TABLE px_parallel_dml_t0_select_list_table (status character varying(30), value int);
 -- PX Insert... Select from Partition Table
 ------------------------------------------------------------------------
 -- Create partition table
 drop table if exists px_parallel_dml_t0_hash cascade;
-psql:sql/polar-px-dev/px_parallel_dml_init.sql:33: NOTICE:  table "px_parallel_dml_t0_hash" does not exist, skipping
 CREATE TABLE px_parallel_dml_t0_hash (id int, value int) PARTITION BY HASH(id);
 CREATE TABLE px_parallel_dml_t0_hash_p1 PARTITION OF px_parallel_dml_t0_hash FOR VALUES WITH (modulus 3, remainder 0);
 CREATE TABLE px_parallel_dml_t0_hash_p2 PARTITION OF px_parallel_dml_t0_hash FOR VALUES WITH (modulus 3, remainder 1);
@@ -59,7 +68,6 @@ insert into px_parallel_dml_t0_hash select generate_series(1,30000),generate_ser
 --range partition
 --Partition constraint: ((x IS NOT NULL) AND (x >= 10) AND (x < 20))
 drop table if exists px_parallel_dml_t1_range cascade;
-psql:sql/polar-px-dev/px_parallel_dml_init.sql:43: NOTICE:  table "px_parallel_dml_t1_range" does not exist, skipping
 CREATE TABLE px_parallel_dml_t1_range(id int, value int) PARTITION BY RANGE(id);
 CREATE TABLE px_parallel_dml_t1_range_p1 PARTITION OF px_parallel_dml_t1_range FOR VALUES FROM (1) TO (10000);
 CREATE TABLE px_parallel_dml_t1_range_p2 PARTITION OF px_parallel_dml_t1_range FOR VALUES FROM (10000) TO (20000);
@@ -67,7 +75,6 @@ CREATE TABLE px_parallel_dml_t1_range_p3 PARTITION OF px_parallel_dml_t1_range D
 insert into px_parallel_dml_t1_range select generate_series(1,30000, 2);
 --range partition with INDEX
 drop table if exists px_parallel_dml_t1_range_index cascade;
-psql:sql/polar-px-dev/px_parallel_dml_init.sql:51: NOTICE:  table "px_parallel_dml_t1_range_index" does not exist, skipping
 CREATE TABLE px_parallel_dml_t1_range_index(id int, value int) PARTITION BY RANGE(id);
 CREATE TABLE px_parallel_dml_t1_range_p1_index PARTITION OF px_parallel_dml_t1_range_index FOR VALUES FROM (1) TO (10000);
 CREATE TABLE px_parallel_dml_t1_range_p2_index PARTITION OF px_parallel_dml_t1_range_index FOR VALUES FROM (10000) TO (20000);
@@ -78,7 +85,6 @@ CREATE INDEX px_parallel_dml_t1_partition_index on px_parallel_dml_t1_range_inde
 --list
 --Partition constraint: ((b IS NOT NULL) AND (b = ANY (ARRAY[1, 3])))
 drop table if exists px_parallel_dml_t2_list cascade;
-psql:sql/polar-px-dev/px_parallel_dml_init.sql:64: NOTICE:  table "px_parallel_dml_t2_list" does not exist, skipping
 create table px_parallel_dml_t2_list(job character varying(30), pvalue int) partition by list (job);
 CREATE TABLE px_parallel_dml_t2_list_p1 PARTITION OF px_parallel_dml_t2_list FOR VALUES IN ('student');
 CREATE TABLE px_parallel_dml_t2_list_p2 PARTITION OF px_parallel_dml_t2_list FOR VALUES IN ('teacher');
@@ -88,20 +94,16 @@ insert into px_parallel_dml_t2_list select 'teacher',generate_series(10000,20000
 insert into px_parallel_dml_t2_list select 'other',generate_series(20000,30000);
 -- Index Test Init
 drop table if exists px_parallel_dml_t4 cascade;
-psql:sql/polar-px-dev/px_parallel_dml_init.sql:74: NOTICE:  table "px_parallel_dml_t4" does not exist, skipping
 CREATE TABLE px_parallel_dml_t4 (c1 int, c2 int) ;
 insert into px_parallel_dml_t4 select generate_series(1,1000),generate_series(1,1000);
 CREATE INDEX t_index_plan on px_parallel_dml_t4(c1);
 -- Constrain Test Init
 drop table if exists px_parallel_dml_t5 cascade;
-psql:sql/polar-px-dev/px_parallel_dml_init.sql:81: NOTICE:  table "px_parallel_dml_t5" does not exist, skipping
 CREATE TABLE px_parallel_dml_t5 (c1 int, c2 int not NULL) ;
 drop table if exists px_parallel_dml_t6 cascade;
-psql:sql/polar-px-dev/px_parallel_dml_init.sql:83: NOTICE:  table "px_parallel_dml_t6" does not exist, skipping
 CREATE TABLE px_parallel_dml_t6 (c1 int, c2 int) ;
 ---- Insert into table with default num
 drop table if exists px_parallel_dml_t8 cascade;
-psql:sql/polar-px-dev/px_parallel_dml_init.sql:88: NOTICE:  table "px_parallel_dml_t8" does not exist, skipping
 CREATE TABLE px_parallel_dml_t8(
 c1 int,
 c2 int DEFAULT 99999,
@@ -109,7 +111,6 @@ c3 varchar DEFAULT NULL,
 c4 timestamp default '2016-06-22 19:10:25-07'
 );
 drop table if exists px_parallel_dml_t9 cascade;
-psql:sql/polar-px-dev/px_parallel_dml_init.sql:96: NOTICE:  table "px_parallel_dml_t9" does not exist, skipping
 CREATE TABLE px_parallel_dml_t9 (c1 int, c2 int) ;
 insert into px_parallel_dml_t9 select generate_series(1,20),generate_series(1,20);
 /*--EXPLAIN_QUERY_BEGIN*/
@@ -486,29 +487,29 @@ select count(*) from px_parallel_dml_t2;
  Optimizer: PolarDB PX Optimizer
 (8 rows)
 
-EXPLAIN (VERBOSE, COSTS OFF) insert into px_parallel_dml_t1 select c2, c1 from px_parallel_dml_t1;
-                                      QUERY PLAN                                      
---------------------------------------------------------------------------------------
- Insert on public.px_parallel_dml_t1
-   ->  Result
+select dml_explain_filter('EXPLAIN (VERBOSE, COSTS OFF, TIMING OFF, SUMMARY OFF, ANALYZE) insert into px_parallel_dml_t1 select c2, c1 from px_parallel_dml_t1');
+                                              dml_explain_filter                                              
+--------------------------------------------------------------------------------------------------------------
+ Insert on public.px_parallel_dml_t1 (actual rows=N loops=1)
+   ->  Result (actual rows=N loops=1)
          Output: px_parallel_dml_t1_1.c2, px_parallel_dml_t1_1.c1
-         ->  PX Coordinator 6:1  (slice1; segments: 6)
+         ->  PX Coordinator 6:1  (slice1; segments: 6) (actual rows=N loops=1)
                Output: px_parallel_dml_t1_1.c1, px_parallel_dml_t1_1.c2
-               ->  Partial Seq Scan on public.px_parallel_dml_t1 px_parallel_dml_t1_1
+               ->  Partial Seq Scan on public.px_parallel_dml_t1 px_parallel_dml_t1_1 (actual rows=N loops=1)
                      Output: px_parallel_dml_t1_1.c1, px_parallel_dml_t1_1.c2
  Optimizer: PolarDB PX Optimizer
 (8 rows)
 
 insert into px_parallel_dml_t2 select c2, c1 from px_parallel_dml_t1;
-EXPLAIN (VERBOSE, COSTS OFF) insert into px_parallel_dml_t1 select c2, c1 from px_parallel_dml_t2;
-                                QUERY PLAN                                
---------------------------------------------------------------------------
- Insert on public.px_parallel_dml_t1
-   ->  Result
+select dml_explain_filter('EXPLAIN (VERBOSE, COSTS OFF, TIMING OFF, SUMMARY OFF, ANALYZE) insert into px_parallel_dml_t1 select c2, c1 from px_parallel_dml_t2');
+                                   dml_explain_filter                                    
+-----------------------------------------------------------------------------------------
+ Insert on public.px_parallel_dml_t1 (actual rows=N loops=1)
+   ->  Result (actual rows=N loops=1)
          Output: px_parallel_dml_t2.c2, px_parallel_dml_t2.c1
-         ->  PX Coordinator 6:1  (slice1; segments: 6)
+         ->  PX Coordinator 6:1  (slice1; segments: 6) (actual rows=N loops=1)
                Output: px_parallel_dml_t2.c1, px_parallel_dml_t2.c2
-               ->  Partial Seq Scan on public.px_parallel_dml_t2
+               ->  Partial Seq Scan on public.px_parallel_dml_t2 (actual rows=N loops=1)
                      Output: px_parallel_dml_t2.c1, px_parallel_dml_t2.c2
  Optimizer: PolarDB PX Optimizer
 (8 rows)
@@ -517,7 +518,7 @@ insert into px_parallel_dml_t1 select c2, c1 from px_parallel_dml_t2;
 select count(*) from px_parallel_dml_t1;
  count 
 -------
-   480
+  1280
 (1 row)
 
                            QUERY PLAN                            
@@ -535,7 +536,7 @@ select count(*) from px_parallel_dml_t1;
 select count(*) from px_parallel_dml_t2;
  count 
 -------
-   320
+   480
 (1 row)
 
                            QUERY PLAN                            
@@ -555,7 +556,7 @@ insert into px_parallel_dml_t2 select c2, c1 from px_parallel_dml_t1 where c1 = 
 select count(*) from px_parallel_dml_t1;
  count 
 -------
-   484
+  1286
 (1 row)
 
                            QUERY PLAN                            
@@ -573,7 +574,7 @@ select count(*) from px_parallel_dml_t1;
 select count(*) from px_parallel_dml_t2;
  count 
 -------
-   330
+   502
 (1 row)
 
                            QUERY PLAN                            
@@ -1635,7 +1636,7 @@ EXPLAIN (VERBOSE, COSTS OFF) insert into px_parallel_dml_t1 select c1,px_paralle
 select count(*) from px_parallel_dml_t1;
  count 
 -------
-   484
+  1286
 (1 row)
 
                            QUERY PLAN                            
@@ -1675,7 +1676,7 @@ insert into px_parallel_dml_t1 select * from px_parallel_dml_t2 group by c1,c2;
 select count(*) from px_parallel_dml_t1;
  count 
 -------
-   584
+  1386
 (1 row)
 
                            QUERY PLAN                            
@@ -1941,29 +1942,29 @@ select count(*) from px_parallel_dml_t2;
  Optimizer: PolarDB PX Optimizer
 (8 rows)
 
-EXPLAIN (VERBOSE, COSTS OFF) insert into px_parallel_dml_t1 select c2, c1 from px_parallel_dml_t1;
-                                      QUERY PLAN                                      
---------------------------------------------------------------------------------------
- Insert on public.px_parallel_dml_t1
-   ->  Result
+select dml_explain_filter('EXPLAIN (VERBOSE, COSTS OFF, TIMING OFF, SUMMARY OFF, ANALYZE) insert into px_parallel_dml_t1 select c2, c1 from px_parallel_dml_t1');
+                                              dml_explain_filter                                              
+--------------------------------------------------------------------------------------------------------------
+ Insert on public.px_parallel_dml_t1 (never executed)
+   ->  Result (actual rows=N loops=1)
          Output: px_parallel_dml_t1_1.c2, px_parallel_dml_t1_1.c1
-         ->  PX Hash 6:3  (slice1; segments: 6)
+         ->  PX Hash 6:3  (slice1; segments: 6) (actual rows=N loops=1)
                Output: px_parallel_dml_t1_1.c2, px_parallel_dml_t1_1.c1, (1)
-               ->  Partial Seq Scan on public.px_parallel_dml_t1 px_parallel_dml_t1_1
+               ->  Partial Seq Scan on public.px_parallel_dml_t1 px_parallel_dml_t1_1 (actual rows=N loops=1)
                      Output: px_parallel_dml_t1_1.c2, px_parallel_dml_t1_1.c1, 1
  Optimizer: PolarDB PX Optimizer
 (8 rows)
 
 insert into px_parallel_dml_t2 select c2, c1 from px_parallel_dml_t1;
-EXPLAIN (VERBOSE, COSTS OFF) insert into px_parallel_dml_t1 select c2, c1 from px_parallel_dml_t2;
-                                 QUERY PLAN                                  
------------------------------------------------------------------------------
- Insert on public.px_parallel_dml_t1
-   ->  Result
+select dml_explain_filter('EXPLAIN (VERBOSE, COSTS OFF, TIMING OFF, SUMMARY OFF, ANALYZE) insert into px_parallel_dml_t1 select c2, c1 from px_parallel_dml_t2');
+                                   dml_explain_filter                                    
+-----------------------------------------------------------------------------------------
+ Insert on public.px_parallel_dml_t1 (never executed)
+   ->  Result (actual rows=N loops=1)
          Output: px_parallel_dml_t2.c2, px_parallel_dml_t2.c1
-         ->  PX Hash 6:3  (slice1; segments: 6)
+         ->  PX Hash 6:3  (slice1; segments: 6) (actual rows=N loops=1)
                Output: px_parallel_dml_t2.c2, px_parallel_dml_t2.c1, (1)
-               ->  Partial Seq Scan on public.px_parallel_dml_t2
+               ->  Partial Seq Scan on public.px_parallel_dml_t2 (actual rows=N loops=1)
                      Output: px_parallel_dml_t2.c2, px_parallel_dml_t2.c1, 1
  Optimizer: PolarDB PX Optimizer
 (8 rows)
@@ -1972,7 +1973,7 @@ insert into px_parallel_dml_t1 select c2, c1 from px_parallel_dml_t2;
 select count(*) from px_parallel_dml_t1;
  count 
 -------
-   480
+  1280
 (1 row)
 
                            QUERY PLAN                            
@@ -1990,7 +1991,7 @@ select count(*) from px_parallel_dml_t1;
 select count(*) from px_parallel_dml_t2;
  count 
 -------
-   320
+   480
 (1 row)
 
                            QUERY PLAN                            
@@ -2010,7 +2011,7 @@ insert into px_parallel_dml_t2 select c2, c1 from px_parallel_dml_t1 where c1 = 
 select count(*) from px_parallel_dml_t1;
  count 
 -------
-   484
+  1286
 (1 row)
 
                            QUERY PLAN                            
@@ -2028,7 +2029,7 @@ select count(*) from px_parallel_dml_t1;
 select count(*) from px_parallel_dml_t2;
  count 
 -------
-   330
+   502
 (1 row)
 
                            QUERY PLAN                            
@@ -3110,7 +3111,7 @@ EXPLAIN (VERBOSE, COSTS OFF) insert into px_parallel_dml_t1 select c1,px_paralle
 select count(*) from px_parallel_dml_t1;
  count 
 -------
-   484
+  1286
 (1 row)
 
                            QUERY PLAN                            
@@ -3150,7 +3151,7 @@ insert into px_parallel_dml_t1 select * from px_parallel_dml_t2 group by c1,c2;
 select count(*) from px_parallel_dml_t1;
  count 
 -------
-   584
+  1386
 (1 row)
 
                            QUERY PLAN                            
@@ -3416,29 +3417,29 @@ select count(*) from px_parallel_dml_t2;
  Optimizer: PolarDB PX Optimizer
 (8 rows)
 
-EXPLAIN (VERBOSE, COSTS OFF) insert into px_parallel_dml_t1 select c2, c1 from px_parallel_dml_t1;
-                                      QUERY PLAN                                      
---------------------------------------------------------------------------------------
- Insert on public.px_parallel_dml_t1
-   ->  Result
+select dml_explain_filter('EXPLAIN (VERBOSE, COSTS OFF, TIMING OFF, SUMMARY OFF, ANALYZE) insert into px_parallel_dml_t1 select c2, c1 from px_parallel_dml_t1');
+                                              dml_explain_filter                                              
+--------------------------------------------------------------------------------------------------------------
+ Insert on public.px_parallel_dml_t1 (never executed)
+   ->  Result (actual rows=N loops=1)
          Output: px_parallel_dml_t1_1.c2, px_parallel_dml_t1_1.c1
-         ->  PX Hash 6:6  (slice1; segments: 6)
+         ->  PX Hash 6:6  (slice1; segments: 6) (actual rows=N loops=1)
                Output: px_parallel_dml_t1_1.c2, px_parallel_dml_t1_1.c1, (1)
-               ->  Partial Seq Scan on public.px_parallel_dml_t1 px_parallel_dml_t1_1
+               ->  Partial Seq Scan on public.px_parallel_dml_t1 px_parallel_dml_t1_1 (actual rows=N loops=1)
                      Output: px_parallel_dml_t1_1.c2, px_parallel_dml_t1_1.c1, 1
  Optimizer: PolarDB PX Optimizer
 (8 rows)
 
 insert into px_parallel_dml_t2 select c2, c1 from px_parallel_dml_t1;
-EXPLAIN (VERBOSE, COSTS OFF) insert into px_parallel_dml_t1 select c2, c1 from px_parallel_dml_t2;
-                                 QUERY PLAN                                  
------------------------------------------------------------------------------
- Insert on public.px_parallel_dml_t1
-   ->  Result
+select dml_explain_filter('EXPLAIN (VERBOSE, COSTS OFF, TIMING OFF, SUMMARY OFF, ANALYZE) insert into px_parallel_dml_t1 select c2, c1 from px_parallel_dml_t2');
+                                   dml_explain_filter                                    
+-----------------------------------------------------------------------------------------
+ Insert on public.px_parallel_dml_t1 (never executed)
+   ->  Result (actual rows=N loops=1)
          Output: px_parallel_dml_t2.c2, px_parallel_dml_t2.c1
-         ->  PX Hash 6:6  (slice1; segments: 6)
+         ->  PX Hash 6:6  (slice1; segments: 6) (actual rows=N loops=1)
                Output: px_parallel_dml_t2.c2, px_parallel_dml_t2.c1, (1)
-               ->  Partial Seq Scan on public.px_parallel_dml_t2
+               ->  Partial Seq Scan on public.px_parallel_dml_t2 (actual rows=N loops=1)
                      Output: px_parallel_dml_t2.c2, px_parallel_dml_t2.c1, 1
  Optimizer: PolarDB PX Optimizer
 (8 rows)
@@ -3447,7 +3448,7 @@ insert into px_parallel_dml_t1 select c2, c1 from px_parallel_dml_t2;
 select count(*) from px_parallel_dml_t1;
  count 
 -------
-   480
+  1280
 (1 row)
 
                            QUERY PLAN                            
@@ -3465,7 +3466,7 @@ select count(*) from px_parallel_dml_t1;
 select count(*) from px_parallel_dml_t2;
  count 
 -------
-   320
+   480
 (1 row)
 
                            QUERY PLAN                            
@@ -3485,7 +3486,7 @@ insert into px_parallel_dml_t2 select c2, c1 from px_parallel_dml_t1 where c1 = 
 select count(*) from px_parallel_dml_t1;
  count 
 -------
-   484
+  1286
 (1 row)
 
                            QUERY PLAN                            
@@ -3503,7 +3504,7 @@ select count(*) from px_parallel_dml_t1;
 select count(*) from px_parallel_dml_t2;
  count 
 -------
-   330
+   502
 (1 row)
 
                            QUERY PLAN                            
@@ -4585,7 +4586,7 @@ EXPLAIN (VERBOSE, COSTS OFF) insert into px_parallel_dml_t1 select c1,px_paralle
 select count(*) from px_parallel_dml_t1;
  count 
 -------
-   484
+  1286
 (1 row)
 
                            QUERY PLAN                            
@@ -4625,7 +4626,7 @@ insert into px_parallel_dml_t1 select * from px_parallel_dml_t2 group by c1,c2;
 select count(*) from px_parallel_dml_t1;
  count 
 -------
-   584
+  1386
 (1 row)
 
                            QUERY PLAN                            
@@ -4891,29 +4892,29 @@ select count(*) from px_parallel_dml_t2;
  Optimizer: PolarDB PX Optimizer
 (8 rows)
 
-EXPLAIN (VERBOSE, COSTS OFF) insert into px_parallel_dml_t1 select c2, c1 from px_parallel_dml_t1;
-                                      QUERY PLAN                                      
---------------------------------------------------------------------------------------
- Insert on public.px_parallel_dml_t1
-   ->  Result
+select dml_explain_filter('EXPLAIN (VERBOSE, COSTS OFF, TIMING OFF, SUMMARY OFF, ANALYZE) insert into px_parallel_dml_t1 select c2, c1 from px_parallel_dml_t1');
+                                              dml_explain_filter                                              
+--------------------------------------------------------------------------------------------------------------
+ Insert on public.px_parallel_dml_t1 (never executed)
+   ->  Result (actual rows=N loops=1)
          Output: px_parallel_dml_t1_1.c2, px_parallel_dml_t1_1.c1
-         ->  PX Hash 6:10  (slice1; segments: 6)
+         ->  PX Hash 6:10  (slice1; segments: 6) (actual rows=N loops=1)
                Output: px_parallel_dml_t1_1.c2, px_parallel_dml_t1_1.c1, (1)
-               ->  Partial Seq Scan on public.px_parallel_dml_t1 px_parallel_dml_t1_1
+               ->  Partial Seq Scan on public.px_parallel_dml_t1 px_parallel_dml_t1_1 (actual rows=N loops=1)
                      Output: px_parallel_dml_t1_1.c2, px_parallel_dml_t1_1.c1, 1
  Optimizer: PolarDB PX Optimizer
 (8 rows)
 
 insert into px_parallel_dml_t2 select c2, c1 from px_parallel_dml_t1;
-EXPLAIN (VERBOSE, COSTS OFF) insert into px_parallel_dml_t1 select c2, c1 from px_parallel_dml_t2;
-                                 QUERY PLAN                                  
------------------------------------------------------------------------------
- Insert on public.px_parallel_dml_t1
-   ->  Result
+select dml_explain_filter('EXPLAIN (VERBOSE, COSTS OFF, TIMING OFF, SUMMARY OFF, ANALYZE) insert into px_parallel_dml_t1 select c2, c1 from px_parallel_dml_t2');
+                                   dml_explain_filter                                    
+-----------------------------------------------------------------------------------------
+ Insert on public.px_parallel_dml_t1 (never executed)
+   ->  Result (actual rows=N loops=1)
          Output: px_parallel_dml_t2.c2, px_parallel_dml_t2.c1
-         ->  PX Hash 6:10  (slice1; segments: 6)
+         ->  PX Hash 6:10  (slice1; segments: 6) (actual rows=N loops=1)
                Output: px_parallel_dml_t2.c2, px_parallel_dml_t2.c1, (1)
-               ->  Partial Seq Scan on public.px_parallel_dml_t2
+               ->  Partial Seq Scan on public.px_parallel_dml_t2 (actual rows=N loops=1)
                      Output: px_parallel_dml_t2.c2, px_parallel_dml_t2.c1, 1
  Optimizer: PolarDB PX Optimizer
 (8 rows)
@@ -4922,7 +4923,7 @@ insert into px_parallel_dml_t1 select c2, c1 from px_parallel_dml_t2;
 select count(*) from px_parallel_dml_t1;
  count 
 -------
-   480
+  1280
 (1 row)
 
                            QUERY PLAN                            
@@ -4940,7 +4941,7 @@ select count(*) from px_parallel_dml_t1;
 select count(*) from px_parallel_dml_t2;
  count 
 -------
-   320
+   480
 (1 row)
 
                            QUERY PLAN                            
@@ -4960,7 +4961,7 @@ insert into px_parallel_dml_t2 select c2, c1 from px_parallel_dml_t1 where c1 = 
 select count(*) from px_parallel_dml_t1;
  count 
 -------
-   484
+  1286
 (1 row)
 
                            QUERY PLAN                            
@@ -4978,7 +4979,7 @@ select count(*) from px_parallel_dml_t1;
 select count(*) from px_parallel_dml_t2;
  count 
 -------
-   330
+   502
 (1 row)
 
                            QUERY PLAN                            
@@ -6060,7 +6061,7 @@ EXPLAIN (VERBOSE, COSTS OFF) insert into px_parallel_dml_t1 select c1,px_paralle
 select count(*) from px_parallel_dml_t1;
  count 
 -------
-   484
+  1286
 (1 row)
 
                            QUERY PLAN                            
@@ -6100,7 +6101,7 @@ insert into px_parallel_dml_t1 select * from px_parallel_dml_t2 group by c1,c2;
 select count(*) from px_parallel_dml_t1;
  count 
 -------
-   584
+  1386
 (1 row)
 
                            QUERY PLAN                            
@@ -6200,3 +6201,4 @@ select * from px_parallel_dml_t8 ORDER BY c1 ASC;
  Optimizer: PolarDB PX Optimizer
 (9 rows)
 
+reset client_min_messages;
