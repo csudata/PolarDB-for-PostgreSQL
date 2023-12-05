@@ -1,0 +1,449 @@
+name: Csuopen Release PolarDB
+on:
+  push:
+    tags:
+      - b*
+jobs:
+  build_polardb_and_pfs_on_centos7:
+    runs-on: ubuntu-latest
+    container:
+      image: polardb/polardb_pg_devel:centos7
+      options: --entrypoint /bin/bash --user root
+    steps:
+      - name: Get the polardb version
+        id: get_version
+        run: echo "::set-output name=VERSION::${GITHUB_REF#refs/tags/}"
+      - name: Build ZLog
+        run: |
+          mkdir /tmp/zlog_build
+          cd /tmp
+          wget https://github.com/HardySimpson/zlog/archive/refs/tags/1.2.16.tar.gz -O /tmp/zlog-1.2.16.tar.gz
+          tar -xzf zlog-1.2.16.tar.gz
+          cd zlog-1.2.16
+          make && make install
+          cp /usr/local/include/zlog.h /tmp/zlog_build
+          cp /usr/local/bin/zlog-chk-conf /tmp/zlog_build
+          cp /usr/local/lib/libzlog.so.1.2 /tmp/zlog_build/libzlog.so
+          cp /usr/local/lib/libzlog.a /tmp/zlog_build
+      - name: Build PFS
+        run: |
+          source /etc/bashrc
+          mkdir /tmp/pfs_build
+          cd /tmp
+          wget https://github.com/ApsaraDB/PolarDB-FileSystem/archive/refs/tags/pfsd4pg-release-1.2.42-20220419.tar.gz -O /tmp/pfsd4pg-release-1.2.42-20220419.tar.gz
+          tar -xzf pfsd4pg-release-1.2.42-20220419.tar.gz
+          cd PolarDB-FileSystem-pfsd4pg-release-1.2.42-20220419
+          ./autobuild.sh
+          cp -r bin /tmp/pfs_build
+          cp -r conf /tmp/pfs_build
+          cp -r deploy_scripts /tmp/pfs_build
+          cp -r etc /tmp/pfs_build
+          cp -r install.sh /tmp/pfs_build
+          cp -r lib /tmp/pfs_build
+          cp -r src /tmp/pfs_build
+          cp -r uninstall.sh /tmp/pfs_build
+      - name: Build openSSL
+        run: |
+          mkdir /tmp/dependencies
+          cd /tmp
+          wget https://github.com/openssl/openssl/releases/download/OpenSSL_1_1_1w/openssl-1.1.1w.tar.gz -O /tmp/openssl-1.1.1w.tar.gz
+          tar -xzf openssl-1.1.1w.tar.gz
+          cd openssl-1.1.1w
+          ./config --prefix=/usr/local/openssl --openssldir=/usr/local/openssl
+          make && make install
+          cp ./libssl.so.1.1 /tmp/dependencies
+          cp ./libcrypto.so.1.1 /tmp/dependencies
+          cp /lib64/libxerces-c-3.1.so /tmp/dependencies
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          ref: ${{ github.ref }}
+      - name: Build PolarDB
+        run: |
+          source /etc/bashrc
+          mkdir /tmp/polardb_build
+
+          ./polardb_build.sh --basedir=/tmp/polardb_build --with-pfsd --withpx --noinit
+          cd /tmp
+          tar -cf polardb.tar polardb_build
+      - name: Write install script
+        run: |
+          cat << 'EOF' > /tmp/install.sh
+          #!/bin/bash
+
+          date=$(date +%Y%m%d)
+          basePath=$(cd `dirname $0`; pwd)
+          dependence_path=$basePath/dependencies
+
+          cd $dependence_path
+          echo "copy依赖libssl.so.1.1和libcrypto.so.1.1"
+          if [ ! -e "/usr/lib64/libssl.so.1.1" ];then
+              cp libs/libssl.so.1.1 /usr/lib64/
+          fi
+          if [ ! -e "/usr/lib64/libcrypto.so.1.1" ];then
+              cp libs/libcrypto.so.1.1 /usr/lib64/
+          fi
+          if [ ! -e "/lib64/libxerces-c-3.1.so" ];then
+              cp libs/libxerces-c-3.1.so /lib64/libxerces-c-3.1.so
+          fi
+
+
+          echo "安装zlog"
+          cd $dependence_path/zlog-1.2.16
+          if [ ! -e "/usr/local/include/zlog.h" ];then
+              mkdir -p /usr/local/include /usr/local/lib /usr/local/bin
+              cp -a zlog.h /usr/local/include
+              cp -a zlog-chk-conf /usr/local/bin
+              cp -a libzlog.so /usr/local/lib/libzlog.so.1.2
+              cp -a libzlog.a /usr/local/lib
+              cd /usr/local/lib && ln -sf libzlog.so.1.2 libzlog.so.1
+              cd /usr/local/lib && ln -sf libzlog.so.1 libzlog.so
+          fi
+
+          echo '/usr/local/lib' >> '/etc/ld.so.conf'
+          ldconfig
+
+          echo "安装pfs"
+          cd $dependence_path
+          if [ ! -e '/usr/local/bin/pfs' ];then
+              cd $dependence_path/pfs-1.2.42
+              ./install.sh
+          fi
+
+          echo "安装polardb"
+          cd /usr
+          if [ -d /usr/polardb ]
+          then
+              echo "重命名/usr下的旧版本polardb为polardb_bak_$date"
+              mv polardb polardb_bak_$date
+          fi
+          mkdir polardb
+
+          cd $basePath
+          tar xkf polardb.tar -C /usr/polardb --strip-components=1 >> /dev/null
+          echo "Polardb安装完成"
+          EOF
+      - name: Tar PolarDB
+        run: |
+          mkdir -p /tmp/polardb_tar/dependencies
+          cp /tmp/polardb.tar /tmp/polardb_tar
+          cp -r /tmp/zlog_build /tmp/polardb_tar/dependencies/zlog-1.2.16
+          cp -r /tmp/pfs_build /tmp/polardb_tar/dependencies/pfs-1.2.42
+          cp -r /tmp/dependencies /tmp/polardb_tar/dependencies/libs
+          cp /tmp/install.sh /tmp/polardb_tar
+          chmod +x /tmp/polardb_tar/install.sh
+          cd /tmp
+          tar -cf polardb-${{ steps.get_version.outputs.VERSION }}-el7.tar polardb_tar
+          xz polardb-${{ steps.get_version.outputs.VERSION }}-el7.tar
+      - name: Upload artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: polardb-${{ steps.get_version.outputs.VERSION }}
+          path: /tmp/polardb-${{ steps.get_version.outputs.VERSION }}-el7.tar.xz
+  
+  build_polardb_and_pfs_on_rockylinux8:
+    runs-on: ubuntu-latest
+    container:
+      image: csuopen/polardb_pg_devel:rockylinux88
+      options: --entrypoint /bin/bash --user root
+    steps:
+      - name: Get the polardb version
+        id: get_version
+        run: echo "::set-output name=VERSION::${GITHUB_REF#refs/tags/}"
+      - name: Build ZLog
+        run: |
+          mkdir /tmp/zlog_build
+          cp /usr/local/include/zlog.h /tmp/zlog_build
+          cp /usr/local/bin/zlog-chk-conf /tmp/zlog_build
+          cp /usr/local/lib/libzlog.so.1.2 /tmp/zlog_build/libzlog.so
+          cp /usr/local/lib/libzlog.a /tmp/zlog_build
+      - name: Build PFS
+        run: |
+          source /etc/bashrc
+          mkdir /tmp/pfs_build
+          cd /tmp
+          wget https://github.com/ApsaraDB/PolarDB-FileSystem/archive/refs/tags/pfsd4pg-release-1.2.42-20220419.tar.gz -O /tmp/pfsd4pg-release-1.2.42-20220419.tar.gz
+          tar -xzf pfsd4pg-release-1.2.42-20220419.tar.gz
+          cd PolarDB-FileSystem-pfsd4pg-release-1.2.42-20220419
+          ./autobuild.sh
+          cp -r bin /tmp/pfs_build
+          cp -r conf /tmp/pfs_build
+          cp -r deploy_scripts /tmp/pfs_build
+          cp -r etc /tmp/pfs_build
+          cp -r install.sh /tmp/pfs_build
+          cp -r lib /tmp/pfs_build
+          cp -r src /tmp/pfs_build
+          cp -r uninstall.sh /tmp/pfs_build
+      - name: Build openSSL
+        run: |
+          mkdir /tmp/dependencies
+          cp /usr/lib64/libssl.so.1.1 /tmp/dependencies
+          cp /usr/lib64/libcrypto.so.1.1 /tmp/dependencies
+          cp /lib64/libxerces-c-3.2.so /tmp/dependencies
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          ref: ${{ github.ref }}
+      - name: Build PolarDB
+        run: |
+          source /etc/bashrc
+          mkdir /tmp/polardb_build
+
+          ./polardb_build.sh --basedir=/tmp/polardb_build --with-pfsd --withpx --noinit
+          cd /tmp
+          tar -cf polardb.tar polardb_build
+      - name: Write install script
+        run: |
+          cat << 'EOF' > /tmp/install.sh
+          #!/bin/bash
+
+          date=$(date +%Y%m%d)
+          basePath=$(cd `dirname $0`; pwd)
+          dependence_path=$basePath/dependencies
+
+          cd $dependence_path
+          echo "copy依赖libssl.so.1.1和libcrypto.so.1.1"
+          if [ ! -e "/usr/lib64/libssl.so.1.1" ];then
+              cp libs/libssl.so.1.1 /usr/lib64/
+          fi
+          if [ ! -e "/usr/lib64/libcrypto.so.1.1" ];then
+              cp libs/libcrypto.so.1.1 /usr/lib64/
+          fi
+          if [ ! -e "/lib64/libxerces-c-3.2.so" ];then
+              cp libs/libxerces-c-3.2.so /lib64/libxerces-c-3.2.so
+          fi
+
+          echo "安装zlog"
+          cd $dependence_path/zlog-1.2.16
+          if [ ! -e "/usr/local/include/zlog.h" ];then
+              mkdir -p /usr/local/include /usr/local/lib /usr/local/bin
+              cp -a zlog.h /usr/local/include
+              cp -a zlog-chk-conf /usr/local/bin
+              cp -a libzlog.so /usr/local/lib/libzlog.so.1.2
+              cp -a libzlog.a /usr/local/lib
+              cd /usr/local/lib && ln -sf libzlog.so.1.2 libzlog.so.1
+              cd /usr/local/lib && ln -sf libzlog.so.1 libzlog.so
+          fi
+
+          echo '/usr/local/lib' >> '/etc/ld.so.conf'
+          ldconfig
+
+          echo "安装pfs"
+          cd $dependence_path
+          if [ ! -e '/usr/local/bin/pfs' ];then
+              cd $dependence_path/pfs-1.2.42
+              ./install.sh
+          fi
+
+          echo "安装polardb"
+          cd /usr
+          if [ -d /usr/polardb ]
+          then
+              echo "重命名/usr下的旧版本polardb为polardb_bak_$date"
+              mv polardb polardb_bak_$date
+          fi
+          mkdir polardb
+
+          cd $basePath
+          tar xkf polardb.tar -C /usr/polardb --strip-components=1 >> /dev/null
+          echo "Polardb安装完成"
+          EOF
+      - name: Tar PolarDB
+        run: |
+          mkdir -p /tmp/polardb_tar/dependencies
+          cp /tmp/polardb.tar /tmp/polardb_tar
+          cp -r /tmp/zlog_build /tmp/polardb_tar/dependencies/zlog-1.2.16
+          cp -r /tmp/pfs_build /tmp/polardb_tar/dependencies/pfs-1.2.42
+          cp -r /tmp/dependencies /tmp/polardb_tar/dependencies/libs
+          cp /tmp/install.sh /tmp/polardb_tar
+          chmod +x /tmp/polardb_tar/install.sh
+          cd /tmp
+          tar -cf polardb-${{ steps.get_version.outputs.VERSION }}-el8.tar polardb_tar
+          xz polardb-${{ steps.get_version.outputs.VERSION }}-el8.tar
+      - name: Upload artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: polardb-${{ steps.get_version.outputs.VERSION }}
+          path: /tmp/polardb-${{ steps.get_version.outputs.VERSION }}-el8.tar.xz
+  
+  build_polardb_and_pfs_on_rockylinux9:
+    runs-on: ubuntu-latest
+    container:
+      image: csuopen/polardb_pg_devel:rockylinux93
+      options: --entrypoint /bin/bash --user root
+    steps:
+      - name: Get the polardb version
+        id: get_version
+        run: echo "::set-output name=VERSION::${GITHUB_REF#refs/tags/}"
+      - name: Build ZLog
+        run: |
+          mkdir /tmp/zlog_build
+          cp /usr/local/include/zlog.h /tmp/zlog_build
+          cp /usr/local/bin/zlog-chk-conf /tmp/zlog_build
+          cp /usr/local/lib/libzlog.so.1.2 /tmp/zlog_build/libzlog.so
+          cp /usr/local/lib/libzlog.a /tmp/zlog_build
+      - name: Build PFS
+        run: |
+          source /etc/bashrc
+          mkdir /tmp/pfs_build
+          cd /tmp
+          wget https://github.com/ApsaraDB/PolarDB-FileSystem/archive/refs/tags/pfsd4pg-release-1.2.42-20220419.tar.gz -O /tmp/pfsd4pg-release-1.2.42-20220419.tar.gz
+          tar -xzf pfsd4pg-release-1.2.42-20220419.tar.gz
+          cd PolarDB-FileSystem-pfsd4pg-release-1.2.42-20220419
+          ./autobuild.sh
+          cp -r bin /tmp/pfs_build
+          cp -r conf /tmp/pfs_build
+          cp -r deploy_scripts /tmp/pfs_build
+          cp -r etc /tmp/pfs_build
+          cp -r install.sh /tmp/pfs_build
+          cp -r lib /tmp/pfs_build
+          cp -r src /tmp/pfs_build
+          cp -r uninstall.sh /tmp/pfs_build
+      - name: Build openSSL
+        run: |
+          mkdir /tmp/dependencies
+          cp /usr/lib64/libssl.so.3.0.7 /tmp/dependencies
+          cp /usr/lib64/libcrypto.so.3.0.7 /tmp/dependencies
+          cp /lib64/libxerces-c-3.2.so /tmp/dependencies
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          ref: ${{ github.ref }}
+      - name: Build PolarDB
+        run: |
+          source /etc/bashrc
+          mkdir /tmp/polardb_build
+
+          ./polardb_build.sh --basedir=/tmp/polardb_build --with-pfsd --withpx --noinit
+          cd /tmp
+          tar -cf polardb.tar polardb_build
+      - name: Write install script
+        run: |
+          cat << 'EOF' > /tmp/install.sh
+          #!/bin/bash
+
+          date=$(date +%Y%m%d)
+          basePath=$(cd `dirname $0`; pwd)
+          dependence_path=$basePath/dependencies
+
+          cd $dependence_path
+          echo "copy依赖libssl.so.1.1和libcrypto.so.1.1"
+          if [ ! -e "/usr/lib64/libssl.so.3.0.7" ];then
+              cp libs/libssl.so.3.0.7 /usr/lib64/
+          fi
+          if [ ! -e "/usr/lib64/libcrypto.so.3.0.7" ];then
+              cp libs/libcrypto.so.3.0.7 /usr/lib64/
+          fi
+          if [ ! -e "/lib64/libxerces-c-3.2.so" ];then
+              cp libs/libxerces-c-3.2.so /lib64/libxerces-c-3.2.so
+          fi
+
+          echo "安装zlog"
+          cd $dependence_path/zlog-1.2.16
+          if [ ! -e "/usr/local/include/zlog.h" ];then
+              mkdir -p /usr/local/include /usr/local/lib /usr/local/bin
+              cp -a zlog.h /usr/local/include
+              cp -a zlog-chk-conf /usr/local/bin
+              cp -a libzlog.so /usr/local/lib/libzlog.so.1.2
+              cp -a libzlog.a /usr/local/lib
+              cd /usr/local/lib && ln -sf libzlog.so.1.2 libzlog.so.1
+              cd /usr/local/lib && ln -sf libzlog.so.1 libzlog.so
+          fi
+
+          echo '/usr/local/lib' >> '/etc/ld.so.conf'
+          ldconfig
+
+          echo "安装pfs"
+          cd $dependence_path
+          if [ ! -e '/usr/local/bin/pfs' ];then
+              cd $dependence_path/pfs-1.2.42
+              ./install.sh
+          fi
+
+          echo "安装polardb"
+          cd /usr
+          if [ -d /usr/polardb ]
+          then
+              echo "重命名/usr下的旧版本polardb为polardb_bak_$date"
+              mv polardb polardb_bak_$date
+          fi
+          mkdir polardb
+
+          cd $basePath
+          tar xkf polardb.tar -C /usr/polardb --strip-components=1 >> /dev/null
+          echo "Polardb安装完成"
+          EOF
+      - name: Tar PolarDB
+        run: |
+          mkdir -p /tmp/polardb_tar/dependencies
+          cp /tmp/polardb.tar /tmp/polardb_tar
+          cp -r /tmp/zlog_build /tmp/polardb_tar/dependencies/zlog-1.2.16
+          cp -r /tmp/pfs_build /tmp/polardb_tar/dependencies/pfs-1.2.42
+          cp -r /tmp/dependencies /tmp/polardb_tar/dependencies/libs
+          cp /tmp/install.sh /tmp/polardb_tar
+          chmod +x /tmp/polardb_tar/install.sh
+          cd /tmp
+          tar -cf polardb-${{ steps.get_version.outputs.VERSION }}-el9.tar polardb_tar
+          xz polardb-${{ steps.get_version.outputs.VERSION }}-el9.tar
+      - name: Upload artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: polardb-${{ steps.get_version.outputs.VERSION }}
+          path: /tmp/polardb-${{ steps.get_version.outputs.VERSION }}-el9.tar.xz
+  
+  create-release:
+    needs: [build_polardb_and_pfs_on_centos7, build_polardb_and_pfs_on_rockylinux8, build_polardb_and_pfs_on_rockylinux9]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get the polardb version
+        id: get_version
+        run: echo "::set-output name=VERSION::${GITHUB_REF#refs/tags/}"
+      - name: Download all workflow artifacts
+        uses: actions/download-artifact@v2
+        with:
+          name: polardb-${{ steps.get_version.outputs.VERSION }}
+          path: /tmp
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ steps.get_version.outputs.VERSION }}
+          release_name: PolarDB ${{ steps.get_version.outputs.VERSION }}
+          body: |
+            PolarDB ${{ steps.get_version.outputs.VERSION }}
+
+            ${{ steps.get_tag_message.outputs.TAG_MESSAGE }}
+          draft: false
+          prerelease: false
+      - name: Upload EL8 Release Asset
+        id: upload-release-asset-el8
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: /tmp/polardb-${{ steps.get_version.outputs.VERSION }}-el8.tar.xz
+          asset_name: polardb-11.9-${{ steps.get_version.outputs.VERSION }}.el8.x86_64.tar.xz
+          asset_content_type: application/x-xz
+      - name: Upload EL7 Release Asset
+        id: upload-release-asset-el7
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: /tmp/polardb-${{ steps.get_version.outputs.VERSION }}-el7.tar.xz
+          asset_name: polardb-11.9-${{ steps.get_version.outputs.VERSION }}.el7.x86_64.tar.xz
+          asset_content_type: application/x-xz
+      - name: Upload EL9 Release Asset
+        id: upload-release-asset-el9
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: /tmp/polardb-${{ steps.get_version.outputs.VERSION }}-el9.tar.xz
+          asset_name: polardb-11.9-${{ steps.get_version.outputs.VERSION }}.el9.x86_64.tar.xz
+          asset_content_type: application/x-xz
