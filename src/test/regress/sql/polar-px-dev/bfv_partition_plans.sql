@@ -11,7 +11,7 @@ set search_path=bfv_partition_plans;
 -- Initial setup for all the partitioning test for this suite
 --
 -- start_ignore
-CREATE LANGUAGE plpythonu;
+CREATE LANGUAGE plpython3u;
 -- end_ignore
 
 create or replace function count_operator(query text, operator text) returns int as

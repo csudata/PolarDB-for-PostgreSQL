@@ -14,6 +14,7 @@ SUBDIRS += pgvector
 SUBDIRS += polar_worker
 SUBDIRS += polar_tde_utils
 SUBDIRS += polar_parameter_check
+SUBDIRS += polar_stat_env
 SUBDIRS += polar_stat_sql
 SUBDIRS += polar_csn
 SUBDIRS += polar_px

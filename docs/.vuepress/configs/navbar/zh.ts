@@ -67,10 +67,10 @@ export const zh: NavbarConfig = [
     ],
   },
   {
-    text: "内核增强功能",
+    text: "自研功能",
     children: [
       {
-        text: "文档入口",
+        text: "功能总览",
         link: "/zh/features/",
       },
       {
@@ -81,6 +81,7 @@ export const zh: NavbarConfig = [
           "/zh/features/v11/availability/",
           "/zh/features/v11/security/",
           "/zh/features/v11/epq/",
+          "/zh/features/v11/extensions/",
         ],
       },
     ],

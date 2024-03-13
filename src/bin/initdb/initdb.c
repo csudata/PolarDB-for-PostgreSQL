@@ -117,7 +117,11 @@ static const char *const encryption_ciphers[] = {
 	"none",
 	"aes-128",
 	"aes-256",
+#if OPENSSL_VERSION_NUMBER >= 0x10101000L
+#ifndef OPENSSL_NO_SM4
 	"sm4",
+#endif
+#endif
 	NULL
 };
 

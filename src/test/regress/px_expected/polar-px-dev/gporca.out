@@ -16145,7 +16145,7 @@ drop table can_set_tag_target;
 drop table can_set_tag_audit;
 -- start_ignore
 create language plpython3u;
-ERROR:  could not access file "$libdir/plpython3": No such file or directory
+ERROR:  language "plpython3u" already exists
 -- end_ignore
 -- Checking if ORCA uses parser's canSetTag for CREATE TABLE AS SELECT
 create or replace function canSetTag_Func(x int) returns int as $$
@@ -16154,8 +16154,6 @@ create or replace function canSetTag_Func(x int) returns int as $$
     else:
         return x * 3
 $$ language plpython3u;
-ERROR:  language "plpython3u" does not exist
-HINT:  Use CREATE EXTENSION to load the language into the database.
 create table canSetTag_input_data (domain integer, class integer, attr text, value integer)
    ;
 insert into canSetTag_input_data values(1, 1, 'A', 1);
@@ -16164,14 +16162,8 @@ insert into canSetTag_input_data values(3, 0, 'B', 1);
 create table canSetTag_bug_table as
 SELECT attr, class, (select canSetTag_Func(count(distinct class)::int) from canSetTag_input_data)
    as dclass FROM canSetTag_input_data GROUP BY attr, class ;
-ERROR:  function cansettag_func(integer) does not exist
-LINE 2: SELECT attr, class, (select canSetTag_Func(count(distinct cl...
-                                    ^
-HINT:  No function matches the given name and argument types. You might need to add explicit type casts.
 drop function canSetTag_Func(x int);
-ERROR:  function cansettag_func(integer) does not exist
 drop table canSetTag_bug_table;
-ERROR:  table "cansettag_bug_table" does not exist
 drop table canSetTag_input_data;
 -- Test B-Tree index scan with in list
 CREATE TABLE btree_test as SELECT i a, i b FROM generate_series(1,100) i ;

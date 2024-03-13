@@ -144,5 +144,3 @@
 		"polar_px_allow_pagemode_seqscan",
 		"polar_px_allow_pagemode_bitmapscan",
 		"polar_trace_heap_scan_flow",
-		"polar_enable_log_search_path"
-		"polar_enable_log_parameter_type"

@@ -46,8 +46,8 @@ set search_path='qp_with_functional_inlining';
 -- end_matchsubs
 -- start_ignore
 /*--EXPLAIN_QUERY_BEGIN*/
-CREATE LANGUAGE plpythonu;
-psql:sql/polar-px-dev/qp_with_functional.sql:40: ERROR:  language "plpythonu" already exists
+CREATE LANGUAGE plpython3u;
+psql:sql/polar-px-dev/qp_with_functional.sql:40: ERROR:  language "plpython3u" already exists
 -- end_ignore
 CREATE TABLE foo AS SELECT i as a, i+1 as b from generate_series(1,10)i;
 CREATE TABLE bar AS SELECT i as c, i+1 as d from generate_series(1,10)i;

@@ -79,7 +79,6 @@
 #include "utils/ps_status.h"
 
 /* POLAR */
-#include "catalog/namespace.h"
 #include "utils/polar_backtrace.h"
 #include "utils/timestamp.h"
 
@@ -3220,10 +3219,7 @@ send_message_to_server_log(ErrorData *edata)
 				new_edata.sqlerrcode = edata->sqlerrcode;
 				polar_audit_log.query_string = debug_query_string;
 
-				if (polar_enable_log_search_path)
-					polar_write_audit_log(&new_edata, "statement: /*%s*/ %s", namespace_search_path, debug_query_string);
-				else
-					polar_write_audit_log(&new_edata, "statement: %s", debug_query_string);
+				polar_write_audit_log(&new_edata, "statement: %s", debug_query_string);
 			}
 		}
 		else

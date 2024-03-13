@@ -18,8 +18,10 @@ enum database_encryption_cipher_kind
 	TDE_ENCRYPTION_OFF = 0,
 	TDE_ENCRYPTION_AES_128,
 	TDE_ENCRYPTION_AES_256,
+#if OPENSSL_VERSION_NUMBER >= 0x10101000L
 #ifndef OPENSSL_NO_SM4
 	TDE_ENCRYPTION_SM4
+#endif
 #endif
 };
 

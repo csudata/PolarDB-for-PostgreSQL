@@ -121,9 +121,6 @@ typedef struct CachedPlanSource
 
 	/* POLAR: Shared Server */
 	bool		polar_on_session_context;
-
-	/* POLAR: The stmt_name who created this plansource*/
-	char		*stmt_name;
 } CachedPlanSource;
 
 /*
@@ -159,8 +156,7 @@ extern void ResetPlanCache(void);
 extern CachedPlanSource *CreateCachedPlan(struct RawStmt *raw_parse_tree,
 										  const char *query_string,
 										  const char *commandTag,
-										  bool polar_on_session_context,
-										  const char *stmt_name);
+										  bool polar_on_session_context);
 extern CachedPlanSource *CreateOneShotCachedPlan(struct RawStmt *raw_parse_tree,
 						const char *query_string,
 						const char *commandTag);

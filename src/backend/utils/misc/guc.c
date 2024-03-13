@@ -612,8 +612,10 @@ const struct config_enum_entry data_encryption_cipher_options[] = {
 	{"off",		TDE_ENCRYPTION_OFF, false},
 	{"aes-128", TDE_ENCRYPTION_AES_128, false},
 	{"aes-256", TDE_ENCRYPTION_AES_256, false},
+#if OPENSSL_VERSION_NUMBER >= 0x10101000L
 #ifndef OPENSSL_NO_SM4
 	{"sm4",		TDE_ENCRYPTION_SM4, false},
+#endif
 #endif
 	{NULL, 0, false}
 };
@@ -848,8 +850,6 @@ int     polar_max_auditlog_files;
 int     polar_max_slowlog_files;
 int     polar_max_logindex_files;
 int 	polar_trace_logindex_messages = LOG;
-bool	polar_enable_log_search_path = true;
-bool	polar_enable_log_parameter_type = true;
 
 /*
  * Forbidden functions names for non-superuser
@@ -3844,27 +3844,6 @@ static struct config_bool ConfigureNamesBool[] =
 		},
 		&polar_enable_shm_aset,
 		false,
-		NULL, NULL, NULL
-	},
-
-	{
-		{"polar_enable_log_search_path", PGC_SIGHUP, DEVELOPER_OPTIONS,
-			gettext_noop("enable log search_path to log file."),
-			NULL,
-			GUC_NO_SHOW_ALL | GUC_NO_RESET_ALL
-		},
-		&polar_enable_log_search_path,
-		true,
-		NULL, NULL, NULL
-	},
-	{
-		{"polar_enable_log_parameter_type", PGC_SIGHUP, LOGGING,
- 			gettext_noop("Enable polar log SQL parameter type."),
- 			NULL,
-			GUC_NO_SHOW_ALL | GUC_NO_RESET_ALL
- 		},
- 		&polar_enable_log_parameter_type,
-		true,
 		NULL, NULL, NULL
 	},
 

@@ -1,4 +1,4 @@
-# 内核增强功能
+# 自研功能
 
 - [PolarDB for PostgreSQL 11](./v11/README.md)
 
@@ -117,6 +117,21 @@
 <td>ePQ 支持创建/刷新物化视图并行加速和批量写入</td>
 <td style="text-align:center">/</td>
 <td style="text-align:center"><a href="./v11/epq/epq-ctas-mtview-bulk-insert.html"><Badge type="tip" text="V11 / v1.1.30-" vertical="top" /></a></td>
+</tr>
+<tr>
+<td><strong>第三方插件</strong></td>
+<td style="text-align:center">...</td>
+<td style="text-align:center"><a href="./v11/extensions/">...</a></td>
+</tr>
+<tr>
+<td>pgvector</td>
+<td style="text-align:center">/</td>
+<td style="text-align:center"><a href="./v11/extensions/pgvector.html"><Badge type="tip" text="V11 / v1.1.35-" vertical="top" /></a></td>
+</tr>
+<tr>
+<td>smlar</td>
+<td style="text-align:center">/</td>
+<td style="text-align:center"><a href="./v11/extensions/smlar.html"><Badge type="tip" text="V11 / v1.1.35-" vertical="top" /></a></td>
 </tr>
 </tbody>
 </table>

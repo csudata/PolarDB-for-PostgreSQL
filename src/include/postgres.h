@@ -784,5 +784,4 @@ extern Datum Float8GetDatum(float8 X);
 #endif
 /* POLAR end */
 
-extern char *polar_get_prepared_statement_params_typename(const char *stmt_name);
 #endif							/* POSTGRES_H */

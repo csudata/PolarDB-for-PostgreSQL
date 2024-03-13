@@ -25,85 +25,99 @@ on:
   workflow_dispatch:
 
 jobs:
-  build:
+  build_normal:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        container_image: [ centos7 ]
-        instance_type: [ oltp, htap, dma ]
-
+        container_image: [ ubuntu20.04, ubuntu22.04 ]
+        instance_type: [ oltp, htap ]
     steps:
-      - 
-        name: Fetch PolarDB source code
-        uses: actions/checkout@v3
-
-      -
-        name: Create and start the container
+      - name: Fetch PolarDB source code
+        uses: actions/checkout@v4
+      - name: Create and start the container
         run: |
           docker create                                                  \
             -t                                                           \
             --name polardb_${{ matrix.container_image }}                 \
             -v `pwd`:/home/postgres/PolarDB-for-PostgreSQL               \
-            mrdrivingduck/polardb_pg_devel:${{ matrix.container_image }} \
+            polardb/polardb_pg_devel:${{ matrix.container_image }} \
             bash &&                                                      \
           docker start polardb_${{ matrix.container_image }}
-
-      -
-        name: Change ownership of the source code
+      - name: Change ownership of the source code
         run: |
           docker exec                                            \
             polardb_${{ matrix.container_image }}                \
             bash -c "cd /home/postgres/PolarDB-for-PostgreSQL && \
                      sudo chown -R postgres:postgres ./"
-
-      -
-        name: Ignore some test cases for OLTP regression testing
+      - name: Ignore some test cases for OLTP regression testing
         if: ${{ matrix.instance_type == 'oltp' }}
         run: |
           docker exec                                                \
             polardb_${{ matrix.container_image }}                    \
             bash -c "cd /home/postgres/PolarDB-for-PostgreSQL"
-      -
-        name: Build and run OLTP regression testing
+      - name: Build and run OLTP regression testing
         if: ${{ matrix.instance_type == 'oltp' }}
         run: |
           docker exec                                                \
             polardb_${{ matrix.container_image }}                    \
             bash -c "cd /home/postgres/PolarDB-for-PostgreSQL &&     \
-                     source /etc/bashrc &&                           \
+                     if [ -f /etc/bashrc ]; then source /etc/bashrc; fi && \
                      ./polardb_build.sh --withrep -r -e -r-external  \
                      -r-contrib -r-pl --with-tde"
-
-      -
-        name: Ignore some test cases for HTAP regression testing
+      - name: Ignore some test cases for HTAP regression testing
         if: ${{ matrix.instance_type == 'htap' }}
         run: |
           docker exec                                                \
             polardb_${{ matrix.container_image }}                    \
             bash -c "cd /home/postgres/PolarDB-for-PostgreSQL &&     \
                      sed -i 's/test: polar-px-dev\/polar_partition_huge/#&/g' src/test/regress/polar-px-dev-schedule"
-      -
-        name: Build and run HTAP regression testing
+      - name: Build and run HTAP regression testing
         if: ${{ matrix.instance_type == 'htap' }}
         run: |
           docker exec                                                \
             polardb_${{ matrix.container_image }}                    \
             bash -c "cd /home/postgres/PolarDB-for-PostgreSQL &&     \
-                     source /etc/bashrc &&                           \
+                     if [ -f /etc/bashrc ]; then source /etc/bashrc; fi && \
                      ./polardb_build.sh -r-px -e -r-external         \
                      -r-contrib -r-pl --with-tde"
+      - name: Change ownership of the source code
+        run: |
+          sudo chown -R runner:runner `pwd`
 
-      -
-        name: Build and run DMA regression testing
+  build_dma:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        container_image: [ centos7 ]
+        instance_type: [ dma ]
+    steps:
+      - name: Fetch PolarDB source code
+        uses: actions/checkout@v4
+
+      - name: Create and start the container
+        run: |
+          docker create                                                  \
+            -t                                                           \
+            --name polardb_${{ matrix.container_image }}                 \
+            -v `pwd`:/home/postgres/PolarDB-for-PostgreSQL               \
+            polardb/polardb_pg_devel:${{ matrix.container_image }} \
+            bash &&                                                      \
+          docker start polardb_${{ matrix.container_image }}
+      - name: Change ownership of the source code
+        run: |
+          docker exec                                            \
+            polardb_${{ matrix.container_image }}                \
+            bash -c "cd /home/postgres/PolarDB-for-PostgreSQL && \
+                     sudo chown -R postgres:postgres ./"
+      - name: Build and run DMA regression testing
         if: ${{ matrix.instance_type == 'dma' }}
         run: |
           docker exec                                                \
             polardb_${{ matrix.container_image }}                    \
             bash -c "cd /home/postgres/PolarDB-for-PostgreSQL &&     \
-                     source /etc/bashrc &&                           \
+                     if [ -f /etc/bashrc ]; then source /etc/bashrc; fi && \
                      ./polardb_build.sh -r -e -r-external            \
                      -r-contrib -r-pl --with-tde --with-dma"
-
       - name: Change ownership of the source code
         run: |
           sudo chown -R runner:runner `pwd`

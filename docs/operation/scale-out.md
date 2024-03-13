@@ -17,13 +17,13 @@ PolarDB for PostgreSQL 是一款存储与计算分离的数据库，所有计算
 首先，在已经搭建完毕的共享存储集群上，初始化并启动第一个计算节点，即读写节点，该节点可以对共享存储进行读写。我们在下面的镜像中提供了已经编译完毕的 PolarDB for PostgreSQL 内核和周边工具的可执行文件：
 
 ```shell:no-line-numbers
-$ docker pull polardb/polardb_pg_binary:pfs
+$ docker pull polardb/polardb_pg_binary
 $ docker run -it \
     --cap-add=SYS_PTRACE \
     --privileged=true \
     --name polardb_pg \
     --shm-size=512m \
-    polardb/polardb_pg_binary:pfs \
+    polardb/polardb_pg_binary \
     bash
 
 $ ls ~/tmp_basedir_polardb_pg_1100_bld/bin/
@@ -130,13 +130,13 @@ $HOME/tmp_basedir_polardb_pg_1100_bld/bin/psql \
 类似地，在用于部署新计算节点的机器上，拉取镜像并启动带有可执行文件的容器：
 
 ```shell:no-line-numbers
-docker pull polardb/polardb_pg_binary:pfs
+docker pull polardb/polardb_pg_binary
 docker run -it \
     --cap-add=SYS_PTRACE \
     --privileged=true \
     --name polardb_pg \
     --shm-size=512m \
-    polardb/polardb_pg_binary:pfs \
+    polardb/polardb_pg_binary \
     bash
 ```
 

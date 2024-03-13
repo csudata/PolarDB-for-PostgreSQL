@@ -47,15 +47,11 @@
  */
 #define prepared_queries 	POLAR_SESSION(prepared_queries)
 
-/* POLAR: get log info for simple PREPARED query */
-LogPreparedInfo polar_log_prepared_info;
-
 static void InitQueryHashTable(void);
 static ParamListInfo EvaluateParams(PreparedStatement *pstmt, List *params,
 			   const char *queryString, EState *estate);
 static Datum build_regtype_array(Oid *param_types, int num_params);
 
-static void polar_fill_prepared_stmt_info(CachedPlanSource *psrc, const char *stmt_name);
 /*
  * Implements the 'PREPARE' utility statement.
  */
@@ -99,8 +95,7 @@ PrepareQuery(PrepareStmt *stmt, const char *queryString,
 	 */
 	plansource = CreateCachedPlan(rawstmt, queryString,
 								  CreateCommandTag(stmt->query),
-								  POLAR_SS_NOT_DEDICATED(),
-								  stmt->name);
+								  POLAR_SS_NOT_DEDICATED());
 
 	/* Transform list of TypeNames to array of type OIDs */
 	nargs = list_length(stmt->argtypes);
@@ -249,9 +244,6 @@ ExecuteQuery(ExecuteStmt *stmt, IntoClause *intoClause,
 		paramLI = EvaluateParams(entry, stmt->params,
 								 queryString, estate);
 	}
-
-	/* POLAR: fill log info of a simple PREPARED stmt */
-	polar_fill_prepared_stmt_info(entry->plansource, stmt->name);
 
 	/* Create a new portal to run the query in */
 	portal = CreateNewPortal();
@@ -700,9 +692,6 @@ ExplainExecuteQuery(ExecuteStmt *execstmt, IntoClause *into, ExplainState *es,
 								 queryString, estate);
 	}
 
-	/* POLAR: fill log info of a simple PREPARED stmt */
-	polar_fill_prepared_stmt_info(entry->plansource, execstmt->name);
-
 	/* Replan if needed, and acquire a transient refcount */
 	/*
 	 * POLAR px: does not support create table as ... execute
@@ -851,33 +840,4 @@ build_regtype_array(Oid *param_types, int num_params)
 	/* XXX: this hardcodes assumptions about the regtype type */
 	result = construct_array(tmp_ary, num_params, REGTYPEOID, 4, true, 'i');
 	return PointerGetDatum(result);
-}
-
-/*
- * POLAR: fill log info of a simple PREPARED statement.
- */
-static void
-polar_fill_prepared_stmt_info(CachedPlanSource *psrc, const char *stmt_name)
-{
-	if (polar_enable_log_parameter_type)
-	{
-		char *params_typename = polar_get_prepared_statement_params_typename(stmt_name);
-		if (params_typename)
-		{
-			/*
-			 * POLAR: polar_params_typename is stored in ErrorContext. Normally, the
-			 * allocated memory is freed manually after writing to log buffer. When
-			 * error occurred, the allocated memory is freed automatically.
-			 */
-			polar_log_prepared_info.params_typename =
-							MemoryContextStrdup(ErrorContext, params_typename);
-			pfree(params_typename);
-		}
-			
-		if (psrc->query_string)
-		{
-			polar_log_prepared_info.source_text =
-							MemoryContextStrdup(ErrorContext, psrc->query_string);
-		}			
-	}
 }

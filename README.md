@@ -1,6 +1,6 @@
 <div align="center">
 
-[![logo](docs/.vuepress/public/images/polardb.png)](https://developer.aliyun.com/topic/polardb-for-pg)
+[![logo](docs/.vuepress/public/images/polardb.png)](https://www.polardbpg.com/home)
 
 # PolarDB for PostgreSQL
 
@@ -8,7 +8,7 @@
 
 #### English | [简体中文](README-CN.md)
 
-[![official](https://img.shields.io/badge/official%20site-blueviolet?style=for-the-badge&logo=alibabacloud)](https://developer.aliyun.com/topic/polardb-for-pg)
+[![official](https://img.shields.io/badge/official%20site-blueviolet?style=for-the-badge&logo=alibabacloud)](https://www.polardbpg.com/home)
 
 [![cirrus-ci-stable](https://img.shields.io/cirrus/github/ApsaraDB/PolarDB-for-PostgreSQL/POLARDB_11_STABLE?style=for-the-badge&logo=cirrusci)](https://cirrus-ci.com/github/ApsaraDB/PolarDB-for-PostgreSQL/POLARDB_11_STABLE)
 [![cirrus-ci-dev](https://img.shields.io/cirrus/github/ApsaraDB/PolarDB-for-PostgreSQL/POLARDB_11_DEV?style=for-the-badge&logo=cirrusci)](https://cirrus-ci.com/github/ApsaraDB/PolarDB-for-PostgreSQL/POLARDB_11_DEV)
@@ -58,11 +58,11 @@ If you have Docker installed already，then you can pull the instance image of P
 
 ```bash
 # pull the instance image from DockerHub
-docker pull polardb/polardb_pg_local_instance:single
+docker pull polardb/polardb_pg_local_instance
 # create, run and enter the container
-docker run -it --cap-add=SYS_PTRACE --privileged=true --name polardb_pg_single polardb/polardb_pg_local_instance:single bash
+docker run -it --rm polardb/polardb_pg_local_instance psql
 # check
-psql -h 127.0.0.1 -c 'select version();'
+postgres=# SELECT version();
             version
 --------------------------------
  PostgreSQL 11.9 (POLARDB 11.9)

@@ -9,6 +9,8 @@ ERROR:  invalid XML content
 LINE 1: INSERT INTO xmltest VALUES (3, '<wrong');
                                        ^
 DETAIL:  line 1: Couldn't find end of Start Tag wrong line 1
+<wrong
+      ^
 SELECT * FROM xmltest;
  id |        data        
 ----+--------------------
@@ -61,6 +63,8 @@ ERROR:  invalid XML content
 LINE 1: SELECT xmlconcat('bad', '<syntax');
                                 ^
 DETAIL:  line 1: Couldn't find end of Start Tag syntax line 1
+<syntax
+       ^
 SELECT xmlconcat('<foo/>', NULL, '<?xml version="1.1" standalone="no"?><bar/>');
   xmlconcat   
 --------------
@@ -105,9 +109,16 @@ SELECT xmlelement(name element, xmlelement(name nested, 'stuff'));
 (1 row)
 
 SELECT xmlelement(name employee, xmlforest(name, age, salary as pay)) FROM emp;
-ERROR:  relation "emp" does not exist
-LINE 1: ...ame employee, xmlforest(name, age, salary as pay)) FROM emp;
-                                                                   ^
+                              xmlelement                              
+----------------------------------------------------------------------
+ <employee><name>sharon</name><age>25</age><pay>1000</pay></employee>
+ <employee><name>sam</name><age>30</age><pay>2000</pay></employee>
+ <employee><name>bill</name><age>20</age><pay>1000</pay></employee>
+ <employee><name>jeff</name><age>23</age><pay>600</pay></employee>
+ <employee><name>cim</name><age>30</age><pay>400</pay></employee>
+ <employee><name>linda</name><age>19</age><pay>100</pay></employee>
+(6 rows)
+
 SELECT xmlelement(name duplicate, xmlattributes(1 as a, 2 as b, 3 as a));
 ERROR:  XML attribute name "a" appears more than once
 LINE 1: ...ment(name duplicate, xmlattributes(1 as a, 2 as b, 3 as a));
@@ -213,12 +224,16 @@ DETAIL:  line 1: xmlParseEntityRef: no name
 <invalidentity>&</invalidentity>
                 ^
 line 1: chunk is not well balanced
+<invalidentity>&</invalidentity>
+                                ^
 SELECT xmlparse(content '<undefinedentity>&idontexist;</undefinedentity>');
 ERROR:  invalid XML content
 DETAIL:  line 1: Entity 'idontexist' not defined
 <undefinedentity>&idontexist;</undefinedentity>
                              ^
 line 1: chunk is not well balanced
+<undefinedentity>&idontexist;</undefinedentity>
+                                               ^
 SELECT xmlparse(content '<invalidns xmlns=''&lt;''/>');
          xmlparse          
 ---------------------------
@@ -237,7 +252,11 @@ DETAIL:  line 1: Entity 'idontexist' not defined
 <twoerrors>&idontexist;</unbalanced>
                        ^
 line 1: Opening and ending tag mismatch: twoerrors line 1 and unbalanced
+<twoerrors>&idontexist;</unbalanced>
+                                    ^
 line 1: chunk is not well balanced
+<twoerrors>&idontexist;</unbalanced>
+                                    ^
 SELECT xmlparse(content '<nosuchprefix:tag/>');
       xmlparse       
 ---------------------
@@ -247,6 +266,8 @@ SELECT xmlparse(content '<nosuchprefix:tag/>');
 SELECT xmlparse(document '   ');
 ERROR:  invalid XML document
 DETAIL:  line 1: Start tag expected, '<' not found
+   
+   ^
 SELECT xmlparse(document 'abc');
 ERROR:  invalid XML document
 DETAIL:  line 1: Start tag expected, '<' not found
@@ -264,12 +285,16 @@ DETAIL:  line 1: xmlParseEntityRef: no name
 <invalidentity>&</abc>
                 ^
 line 1: Opening and ending tag mismatch: invalidentity line 1 and abc
+<invalidentity>&</abc>
+                      ^
 SELECT xmlparse(document '<undefinedentity>&idontexist;</abc>');
 ERROR:  invalid XML document
 DETAIL:  line 1: Entity 'idontexist' not defined
 <undefinedentity>&idontexist;</abc>
                              ^
 line 1: Opening and ending tag mismatch: undefinedentity line 1 and abc
+<undefinedentity>&idontexist;</abc>
+                                   ^
 SELECT xmlparse(document '<invalidns xmlns=''&lt;''/>');
          xmlparse          
 ---------------------------
@@ -288,6 +313,8 @@ DETAIL:  line 1: Entity 'idontexist' not defined
 <twoerrors>&idontexist;</unbalanced>
                        ^
 line 1: Opening and ending tag mismatch: twoerrors line 1 and unbalanced
+<twoerrors>&idontexist;</unbalanced>
+                                    ^
 SELECT xmlparse(document '<nosuchprefix:tag/>');
       xmlparse       
 ---------------------
@@ -472,9 +499,11 @@ SELECT xmlagg(data) FROM xmltest WHERE id > 10;
 (1 row)
 
 SELECT xmlelement(name employees, xmlagg(xmlelement(name name, name))) FROM emp;
-ERROR:  relation "emp" does not exist
-LINE 1: ...me employees, xmlagg(xmlelement(name name, name))) FROM emp;
-                                                                   ^
+                                                           xmlelement                                                           
+--------------------------------------------------------------------------------------------------------------------------------
+ <employees><name>sharon</name><name>sam</name><name>bill</name><name>jeff</name><name>cim</name><name>linda</name></employees>
+(1 row)
+
 -- Check mapping SQL identifier to XML name
 SELECT xmlpi(name ":::_xml_abc135.%-&_");
                       xmlpi                      
@@ -567,9 +596,6 @@ CREATE VIEW xmlview1 AS SELECT xmlcomment('test');
 CREATE VIEW xmlview2 AS SELECT xmlconcat('hello', 'you');
 CREATE VIEW xmlview3 AS SELECT xmlelement(name element, xmlattributes (1 as ":one:", 'deuce' as two), 'content&');
 CREATE VIEW xmlview4 AS SELECT xmlelement(name employee, xmlforest(name, age, salary as pay)) FROM emp;
-ERROR:  relation "emp" does not exist
-LINE 1: ...ame employee, xmlforest(name, age, salary as pay)) FROM emp;
-                                                                   ^
 CREATE VIEW xmlview5 AS SELECT xmlparse(content '<abc>x</abc>');
 CREATE VIEW xmlview6 AS SELECT xmlpi(name foo, 'bar');
 CREATE VIEW xmlview7 AS SELECT xmlroot(xml '<foo/>', version no value, standalone yes);
@@ -577,17 +603,19 @@ CREATE VIEW xmlview8 AS SELECT xmlserialize(content 'good' as char(10));
 CREATE VIEW xmlview9 AS SELECT xmlserialize(content 'good' as text);
 SELECT table_name, view_definition FROM information_schema.views
   WHERE table_name LIKE 'xmlview%' ORDER BY 1;
- table_name |                                              view_definition                                               
-------------+------------------------------------------------------------------------------------------------------------
+ table_name |                                                  view_definition                                                  
+------------+-------------------------------------------------------------------------------------------------------------------
  xmlview1   |  SELECT xmlcomment('test'::text) AS xmlcomment;
  xmlview2   |  SELECT XMLCONCAT('hello'::xml, 'you'::xml) AS "xmlconcat";
  xmlview3   |  SELECT XMLELEMENT(NAME element, XMLATTRIBUTES(1 AS ":one:", 'deuce' AS two), 'content&') AS "xmlelement";
+ xmlview4   |  SELECT XMLELEMENT(NAME employee, XMLFOREST(emp.name AS name, emp.age AS age, emp.salary AS pay)) AS "xmlelement"+
+            |    FROM emp;
  xmlview5   |  SELECT XMLPARSE(CONTENT '<abc>x</abc>'::text STRIP WHITESPACE) AS "xmlparse";
  xmlview6   |  SELECT XMLPI(NAME foo, 'bar'::text) AS "xmlpi";
  xmlview7   |  SELECT XMLROOT('<foo/>'::xml, VERSION NO VALUE, STANDALONE YES) AS "xmlroot";
  xmlview8   |  SELECT (XMLSERIALIZE(CONTENT 'good'::xml AS character(10)))::character(10) AS "xmlserialize";
  xmlview9   |  SELECT XMLSERIALIZE(CONTENT 'good'::xml AS text) AS "xmlserialize";
-(8 rows)
+(9 rows)
 
 -- Text XPath expressions evaluation
 SELECT xpath('/value', data) FROM xmltest;

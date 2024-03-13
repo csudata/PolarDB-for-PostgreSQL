@@ -37,7 +37,7 @@
 
 -- start_ignore
 /*--EXPLAIN_QUERY_BEGIN*/
-CREATE LANGUAGE plpythonu;
+CREATE LANGUAGE plpython3u;
 -- end_ignore
 
 CREATE TABLE foo AS SELECT i as a, i+1 as b from generate_series(1,10)i;

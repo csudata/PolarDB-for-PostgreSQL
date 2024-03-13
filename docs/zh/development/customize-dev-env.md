@@ -197,7 +197,7 @@ cd ~
 
 ### 依赖安装
 
-在 PolarDB for PostgreSQL 的源码库根目录下，有一个 `install_dependencies.sh` 脚本，包含了 PolarDB 和 PFS 需要运行的所有依赖。因此，首先需要克隆 PolarDB 的源码库。
+在 PolarDB for PostgreSQL 源码库根目录的 `deps/` 子目录下，放置了在各个 Linux 发行版上编译安装 PolarDB 和 PFS 需要运行的所有依赖。因此，首先需要克隆 PolarDB 的源码库。
 
 PolarDB for PostgreSQL 的代码托管于 [GitHub](https://github.com/ApsaraDB/PolarDB-for-PostgreSQL) 上，稳定分支为 `POLARDB_11_STABLE`。如果因网络原因不能稳定访问 GitHub，则可以访问 [Gitee 国内镜像](https://gitee.com/mirrors/PolarDB-for-PostgreSQL)。
 
@@ -220,9 +220,9 @@ git clone -b POLARDB_11_STABLE https://gitee.com/mirrors/PolarDB-for-PostgreSQL
 :::
 ::::
 
-源码下载完毕后，使用 `sudo` 执行源代码根目录下的依赖安装脚本 `install_dependencies.sh` 自动完成所有的依赖安装。如果有定制的开发需求，请自行修改 `install_dependencies.sh`。
+源码下载完毕后，使用 `sudo` 执行 `deps/` 目录下的相应脚本 `deps-***.sh` 自动完成所有的依赖安装。比如：
 
 ```bash
 cd PolarDB-for-PostgreSQL
-sudo ./install_dependencies.sh
+sudo ./deps/deps-centos7.sh
 ```

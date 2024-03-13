@@ -43,8 +43,10 @@ ossl_EVP_cipher_func cipher_func_table[] =
 {
 	EVP_aes_128_ctr,	/* TDE_ENCRYPTION_AES_128 */
 	EVP_aes_256_ctr,	/* TDE_ENCRYPTION_AES_256 */
+#if OPENSSL_VERSION_NUMBER >= 0x10101000L
 #ifndef OPENSSL_NO_SM4
 	EVP_sm4_ctr 		/*polar support sm4 TDE_ENCRYPTION_SM4*/
+#endif
 #endif
 };
 

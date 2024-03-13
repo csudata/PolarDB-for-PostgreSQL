@@ -9,8 +9,8 @@ set search_path=bfv_partition_plans;
 -- Initial setup for all the partitioning test for this suite
 --
 -- start_ignore
-CREATE LANGUAGE plpythonu;
-ERROR:  language "plpythonu" already exists
+CREATE LANGUAGE plpython3u;
+ERROR:  language "plpython3u" already exists
 -- end_ignore
 create or replace function count_operator(query text, operator text) returns int as
 $$
@@ -24,8 +24,6 @@ for i in range(len(rv)):
 return result
 $$
 language plpython3u;
-ERROR:  language "plpython3u" does not exist
-HINT:  Use CREATE EXTENSION to load the language into the database.
 create or replace function find_operator(query text, operator_name text) returns text as
 $$
 rv = plpy.execute('EXPLAIN ' + query)
@@ -39,8 +37,6 @@ for i in range(len(rv)):
 return result
 $$
 language plpython3u;
-ERROR:  language "plpython3u" does not exist
-HINT:  Use CREATE EXTENSION to load the language into the database.
 -- Test UPDATE that moves row from one partition to another. The partitioning
 -- key is also the distribution key in this case.
 create table mpp3061 (i int) partition by range(i);
@@ -93,10 +89,11 @@ CREATE TABLE mpp7980_5 PARTITION of mpp7980 for values from ('2009-06-01') to ('
 CREATE TABLE mpp7980_6 PARTITION of mpp7980 for values from ('2009-07-01') to ('2009-08-01');
 -- TEST
 select count_operator('select cust_type, subscription_status,count(distinct subscription_id),sum(voice_call_min),sum(minute_per_call) from mpp7980 where month_id =E''2009-04-01'' group by rollup(1,2);','SIGSEGV');
-ERROR:  function count_operator(unknown, unknown) does not exist
-LINE 1: select count_operator('select cust_type, subscription_status...
-               ^
-HINT:  No function matches the given name and argument types. You might need to add explicit type casts.
+ count_operator 
+----------------
+              0
+(1 row)
+
 insert into mpp7980 values('2009-04-01','xyz','zyz','1',1,1,'1');
 insert into mpp7980 values('2009-04-01','zxyz','zyz','2',2,1,'1');
 insert into mpp7980 values('2009-03-03','xyz','zyz','4',1,3,'1');
@@ -133,10 +130,11 @@ insert into mpp23195_t1 values (generate_series(1,19));
 insert into mpp23195_t2 values (1);
 -- TEST
 select find_operator('select * from mpp23195_t1,mpp23195_t2 where mpp23195_t1.i < mpp23195_t2.i;', 'Dynamic Index Scan');
-ERROR:  function find_operator(unknown, unknown) does not exist
-LINE 1: select find_operator('select * from mpp23195_t1,mpp23195_t2 ...
-               ^
-HINT:  No function matches the given name and argument types. You might need to add explicit type casts.
+ find_operator 
+---------------
+ ['false']
+(1 row)
+
 select * from mpp23195_t1,mpp23195_t2 where mpp23195_t1.i < mpp23195_t2.i;
  i | i 
 ---+---
@@ -189,15 +187,17 @@ create table mpp21834_t2(i int, j int);
 -- TEST
 set polar_px_optimizer_enable_hashjoin = off;
 select find_operator('analyze select * from mpp21834_t2,mpp21834_t1 where mpp21834_t2.i < mpp21834_t1.i;','Dynamic Index Scan');
-ERROR:  function find_operator(unknown, unknown) does not exist
-LINE 1: select find_operator('analyze select * from mpp21834_t2,mpp2...
-               ^
-HINT:  No function matches the given name and argument types. You might need to add explicit type casts.
+ find_operator 
+---------------
+ ['false']
+(1 row)
+
 select find_operator('analyze select * from mpp21834_t2,mpp21834_t1 where mpp21834_t2.i < mpp21834_t1.i;','Nested Loop');
-ERROR:  function find_operator(unknown, unknown) does not exist
-LINE 1: select find_operator('analyze select * from mpp21834_t2,mpp2...
-               ^
-HINT:  No function matches the given name and argument types. You might need to add explicit type casts.
+ find_operator 
+---------------
+ ['true']
+(1 row)
+
 -- CLEANUP
 drop index index_2;
 drop index index_1;
@@ -222,10 +222,11 @@ insert into mpp23288(a) select generate_series(1,20);
 analyze mpp23288;
 -- TEST
 select count_operator('select t2.a, t1.a from mpp23288 as t1 join mpp23288 as t2 on (t1.a < t2.a and t2.a =10) order by t2.a, t1.a;','Dynamic Seq Scan');
-ERROR:  function count_operator(unknown, unknown) does not exist
-LINE 1: select count_operator('select t2.a, t1.a from mpp23288 as t1...
-               ^
-HINT:  No function matches the given name and argument types. You might need to add explicit type casts.
+ count_operator 
+----------------
+              0
+(1 row)
+
 select t2.a, t1.a from mpp23288 as t1 join mpp23288 as t2 on (t1.a < t2.a and t2.a =10) order by t2.a, t1.a;
  a  | a 
 ----+---
@@ -268,10 +269,11 @@ select t2.a, t1.a from mpp23288 as t1 join mpp23288 as t2 on (t1.a < t2.a and t2
 (23 rows)
 
 select count_operator('select t2.a, t1.a from mpp23288 as t1 join mpp23288 as t2 on (t1.a < t2.a and (t2.a = 10 or t2.a = 5 or t2.a = 12)) order by t2.a, t1.a;','Dynamic Seq Scan');
-ERROR:  function count_operator(unknown, unknown) does not exist
-LINE 1: select count_operator('select t2.a, t1.a from mpp23288 as t1...
-               ^
-HINT:  No function matches the given name and argument types. You might need to add explicit type casts.
+ count_operator 
+----------------
+              0
+(1 row)
+
 select t2.a, t1.a from mpp23288 as t1 join mpp23288 as t2 on (t1.a < t2.a and (t2.a = 10 or t2.a = 5 or t2.a = 12)) order by t2.a, t1.a;
  a  | a  
 ----+----
@@ -334,10 +336,11 @@ select t2.a, t1.a from mpp23288 as t1 join mpp23288 as t2 on (t1.a < t2.a and (t
 (28 rows)
 
 select count_operator('select t2.a, t1.a from mpp23288 as t1 join mpp23288 as t2 on t1.a < t2.a and t2.a = 1 or t2.a < 10 order by t2.a, t1.a;','Dynamic Seq Scan');
-ERROR:  function count_operator(unknown, unknown) does not exist
-LINE 1: select count_operator('select t2.a, t1.a from mpp23288 as t1...
-               ^
-HINT:  No function matches the given name and argument types. You might need to add explicit type casts.
+ count_operator 
+----------------
+              0
+(1 row)
+
 select t2.a, t1.a from mpp23288 as t1 join mpp23288 as t2 on t1.a < t2.a and t2.a = 1 or t2.a < 10 order by t2.a, t1.a;
  a | a  
 ---+----
@@ -592,10 +595,11 @@ set polar_px_optimizer_enable_dynamictablescan = off;
 -- implemented during the v12 merge, I'm not sure if this test is testing anything
 -- useful anymore. And/or it redundant with the tests in 'dpe'?
 select count_operator('select * from mpp24151_t, mpp24151_pt where tid = ptid and pt1 = E''hello0'';','->  Partition Selector');
-ERROR:  function count_operator(unknown, unknown) does not exist
-LINE 1: select count_operator('select * from mpp24151_t, mpp24151_pt...
-               ^
-HINT:  No function matches the given name and argument types. You might need to add explicit type casts.
+ count_operator 
+----------------
+              0
+(1 row)
+
 select * from mpp24151_t, mpp24151_pt where tid = ptid and pt1 = 'hello0'
 order by tid, mpp24151_t.dist, mpp24151_pt.dist;
  dist | tid |   t1    | t2  | dist |  pt1   |  pt2  |    pt3    | ptid 
@@ -887,55 +891,65 @@ analyze p3;
 analyze p;
 -- TEST
 select count_operator('select * from (select * from p1 union all select * from p2) as p_all, t where p_all.b=t.b;','Partition Selector');
-ERROR:  function count_operator(unknown, unknown) does not exist
-LINE 1: select count_operator('select * from (select * from p1 union...
-               ^
-HINT:  No function matches the given name and argument types. You might need to add explicit type casts.
+ count_operator 
+----------------
+              0
+(1 row)
+
 select count_operator('select * from (select * from p1 union select * from p2) as p_all, t where p_all.b=t.b;','Partition Selector');
-ERROR:  function count_operator(unknown, unknown) does not exist
-LINE 1: select count_operator('select * from (select * from p1 union...
-               ^
-HINT:  No function matches the given name and argument types. You might need to add explicit type casts.
+ count_operator 
+----------------
+              0
+(1 row)
+
 select count_operator('select * from (select * from p1 except all select * from p2) as p_all, t where p_all.b=t.b;','Partition Selector');
-ERROR:  function count_operator(unknown, unknown) does not exist
-LINE 1: select count_operator('select * from (select * from p1 excep...
-               ^
-HINT:  No function matches the given name and argument types. You might need to add explicit type casts.
+ count_operator 
+----------------
+              0
+(1 row)
+
 select count_operator('select * from (select * from p1 except select * from p2) as p_all, t where p_all.b=t.b;','Partition Selector');
-ERROR:  function count_operator(unknown, unknown) does not exist
-LINE 1: select count_operator('select * from (select * from p1 excep...
-               ^
-HINT:  No function matches the given name and argument types. You might need to add explicit type casts.
+ count_operator 
+----------------
+              0
+(1 row)
+
 select count_operator('select * from (select * from p1 intersect all select * from p2) as p_all, t where p_all.b=t.b;','Partition Selector');
-ERROR:  function count_operator(unknown, unknown) does not exist
-LINE 1: select count_operator('select * from (select * from p1 inter...
-               ^
-HINT:  No function matches the given name and argument types. You might need to add explicit type casts.
+ count_operator 
+----------------
+              0
+(1 row)
+
 select count_operator('select * from (select * from p1 union select * from p2 union all select * from p3) as p_all, t where p_all.b=t.b;','Partition Selector');
-ERROR:  function count_operator(unknown, unknown) does not exist
-LINE 1: select count_operator('select * from (select * from p1 union...
-               ^
-HINT:  No function matches the given name and argument types. You might need to add explicit type casts.
+ count_operator 
+----------------
+              0
+(1 row)
+
 select count_operator('select * from (select * from p1 union select * from p2 union all select * from p) as p_all, t where p_all.b=t.b;','Partition Selector');
-ERROR:  function count_operator(unknown, unknown) does not exist
-LINE 1: select count_operator('select * from (select * from p1 union...
-               ^
-HINT:  No function matches the given name and argument types. You might need to add explicit type casts.
+ count_operator 
+----------------
+              0
+(1 row)
+
 select count_operator('select * from (select * from p1 union select * from p union all select * from p2) as p_all, t where p_all.b=t.b;','Partition Selector');
-ERROR:  function count_operator(unknown, unknown) does not exist
-LINE 1: select count_operator('select * from (select * from p1 union...
-               ^
-HINT:  No function matches the given name and argument types. You might need to add explicit type casts.
+ count_operator 
+----------------
+              0
+(1 row)
+
 select count_operator('select * from (select * from p1 union select * from p2 intersect all select * from p3) as p_all, t where p_all.b=t.b;','Partition Selector');
-ERROR:  function count_operator(unknown, unknown) does not exist
-LINE 1: select count_operator('select * from (select * from p1 union...
-               ^
-HINT:  No function matches the given name and argument types. You might need to add explicit type casts.
+ count_operator 
+----------------
+              0
+(1 row)
+
 select count_operator('select * from (select * from p1 union select * from p intersect all select * from p2) as p_all, t where p_all.b=t.b;','Partition Selector');
-ERROR:  function count_operator(unknown, unknown) does not exist
-LINE 1: select count_operator('select * from (select * from p1 union...
-               ^
-HINT:  No function matches the given name and argument types. You might need to add explicit type casts.
+ count_operator 
+----------------
+              0
+(1 row)
+
 -- CLEANUP
 -- start_ignore
 drop table t;
@@ -994,10 +1008,11 @@ create index dbs_index on dbs using bitmap(c3);
 ERROR:  access method "bitmap" does not exist
 -- TEST
 select find_operator('(select * from dts where c2 = 1) union (select * from dts where c2 = 2) union (select * from dts where c2 = 3) union (select * from dts where c2 = 4) union (select * from dts where c2 = 5) union (select * from dts where c2 = 6) union (select * from dts where c2 = 7) union (select * from dts where c2 = 8) union (select * from dts where c2 = 9) union (select * from dts where c2 = 10);', 'Dynamic Seq Scan');
-ERROR:  function find_operator(unknown, unknown) does not exist
-LINE 1: select find_operator('(select * from dts where c2 = 1) union...
-               ^
-HINT:  No function matches the given name and argument types. You might need to add explicit type casts.
+ find_operator 
+---------------
+ ['false']
+(1 row)
+
 (select * from dts where c2 = 1) union
 (select * from dts where c2 = 2) union
 (select * from dts where c2 = 3) union
@@ -1071,10 +1086,11 @@ HINT:  No function matches the given name and argument types. You might need to 
 
 set polar_px_optimizer_enable_dynamictablescan = off;
 select find_operator('(select * from dis where c3 = 1) union (select * from dis where c3 = 2) union (select * from dis where c3 = 3) union (select * from dis where c3 = 4) union (select * from dis where c3 = 5) union (select * from dis where c3 = 6) union (select * from dis where c3 = 7) union (select * from dis where c3 = 8) union (select * from dis where c3 = 9) union (select * from dis where c3 = 10);', 'Dynamic Index Scan');
-ERROR:  function find_operator(unknown, unknown) does not exist
-LINE 1: select find_operator('(select * from dis where c3 = 1) union...
-               ^
-HINT:  No function matches the given name and argument types. You might need to add explicit type casts.
+ find_operator 
+---------------
+ ['false']
+(1 row)
+
 (select * from dis where c3 = 1) union
 (select * from dis where c3 = 2) union
 (select * from dis where c3 = 3) union
@@ -1417,10 +1433,11 @@ HINT:  No function matches the given name and argument types. You might need to 
 (323 rows)
 
 select find_operator('select * from dbs where c2= 15 and c3 = 5;', 'Bitmap Heap Scan');
-ERROR:  function find_operator(unknown, unknown) does not exist
-LINE 1: select find_operator('select * from dbs where c2= 15 and c3 ...
-               ^
-HINT:  No function matches the given name and argument types. You might need to add explicit type casts.
+ find_operator 
+---------------
+ ['false']
+(1 row)
+
 select * from dbs where c2= 15 and c3 = 5;
  c1 | c2 | c3 
 ----+----+----
@@ -1468,10 +1485,11 @@ select * from pp where b=2 and c=2;
 (0 rows)
 
 select count_operator('select * from pp where b=2 and c=2;','Partition Selector');
-ERROR:  function count_operator(unknown, unknown) does not exist
-LINE 1: select count_operator('select * from pp where b=2 and c=2;',...
-               ^
-HINT:  No function matches the given name and argument types. You might need to add explicit type casts.
+ count_operator 
+----------------
+              0
+(1 row)
+
 -- CLEANUP
 -- start_ignore
 drop index if exists pp_rest_2_idx;
@@ -1521,10 +1539,11 @@ select * from ds_4 where month_id = '200800';
 (7 rows)
 
 select count_operator('select * from ds_4 where month_id = E''200800'';','Partition Selector');
-ERROR:  function count_operator(unknown, unknown) does not exist
-LINE 1: select count_operator('select * from ds_4 where month_id = E...
-               ^
-HINT:  No function matches the given name and argument types. You might need to add explicit type casts.
+ count_operator 
+----------------
+              0
+(1 row)
+
 select * from ds_4 where month_id > '200800';
  month_id | cust_group_acc | mobile_no 
 ----------+----------------+-----------
@@ -1548,10 +1567,11 @@ select * from ds_4 where month_id > '200800';
 (13 rows)
 
 select count_operator('select * from ds_4 where month_id > E''200800'';','Partition Selector');
-ERROR:  function count_operator(unknown, unknown) does not exist
-LINE 1: select count_operator('select * from ds_4 where month_id > E...
-               ^
-HINT:  No function matches the given name and argument types. You might need to add explicit type casts.
+ count_operator 
+----------------
+              0
+(1 row)
+
 select * from ds_4 where month_id <= '200800';
  month_id | cust_group_acc | mobile_no 
 ----------+----------------+-----------
@@ -1569,10 +1589,11 @@ select * from ds_4 where month_id <= '200800';
 (7 rows)
 
 select count_operator('select * from ds_4 where month_id <= E''200800'';','Partition Selector');
-ERROR:  function count_operator(unknown, unknown) does not exist
-LINE 1: select count_operator('select * from ds_4 where month_id <= ...
-               ^
-HINT:  No function matches the given name and argument types. You might need to add explicit type casts.
+ count_operator 
+----------------
+              0
+(1 row)
+
 select * from ds_4 a1,ds_4 a2 where a1.month_id = a2.month_id and a1.month_id > '200800';
  month_id | cust_group_acc | mobile_no | month_id | cust_group_acc | mobile_no 
 ----------+----------------+-----------+----------+----------------+-----------
@@ -1616,10 +1637,11 @@ select * from ds_4 a1,ds_4 a2 where a1.month_id = a2.month_id and a1.month_id > 
 (33 rows)
 
 select count_operator('select * from ds_4 a1,ds_4 a2 where a1.month_id = a2.month_id and a1.month_id > E''200800'';','Partition Selector');
-ERROR:  function count_operator(unknown, unknown) does not exist
-LINE 1: select count_operator('select * from ds_4 a1,ds_4 a2 where a...
-               ^
-HINT:  No function matches the given name and argument types. You might need to add explicit type casts.
+ count_operator 
+----------------
+              0
+(1 row)
+
 -- CLEANUP
 -- start_ignore
 DROP TABLE IF EXISTS ds_4;
@@ -2005,10 +2027,11 @@ CREATE TABLE mpp6247_foo_10 PARTITION of mpp6247_foo for values from ('2009-05-1
 create table mpp6247_bar (like mpp6247_foo);
 -- EXPECT: Single HJ after partition elimination instead of sequence of HJ under Append
 select count_operator('delete from mpp6247_foo using mpp6247_bar where mpp6247_foo.c1 = mpp6247_bar.c1 and mpp6247_foo.dt = ''2009-05-03''', 'Hash Join');
-ERROR:  function count_operator(unknown, unknown) does not exist
-LINE 1: select count_operator('delete from mpp6247_foo using mpp6247...
-               ^
-HINT:  No function matches the given name and argument types. You might need to add explicit type casts.
+ count_operator 
+----------------
+              1
+(1 row)
+
 drop table mpp6247_bar;
 drop table mpp6247_foo;
 -- CLEANUP

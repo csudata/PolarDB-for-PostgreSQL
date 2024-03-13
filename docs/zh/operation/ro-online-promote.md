@@ -19,13 +19,13 @@ PolarDB for PostgreSQL 是一款存储与计算分离的云原生数据库，所
 为方便起见，本示例使用基于本地磁盘的实例来进行演示。拉取如下镜像并启动容器，可以得到一个基于本地磁盘的 HTAP 实例：
 
 ```shell:no-line-numbers
-docker pull polardb/polardb_pg_local_instance:htap
+docker pull polardb/polardb_pg_local_instance
 docker run -it \
     --cap-add=SYS_PTRACE \
     --privileged=true \
     --name polardb_pg_htap \
     --shm-size=512m \
-    polardb/polardb_pg_local_instance:htap \
+    polardb/polardb_pg_local_instance \
     bash
 ```
 

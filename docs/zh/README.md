@@ -49,12 +49,13 @@ postgres=# SELECT version();
   </div>
 
   <div class="feature">
-    <h3>内核增强功能</h3>
+    <h3>自研功能</h3>
     <ul style="position: relative;z-index: 10;">
       <li><a href="./features/v11/performance/">高性能</a></li>
       <li><a href="./features/v11/availability/">高可用</a></li>
       <li><a href="./features/v11/security/">安全</a></li>
       <li><a href="./features/v11/epq/">弹性跨机并行查询（ePQ）</a></li>
+      <li><a href="./features/v11/extensions/">第三方插件</a></li>
     </ul>
   </div>
 
