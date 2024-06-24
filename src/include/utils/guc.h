@@ -988,6 +988,7 @@ extern int	px_max_slices;
 extern char *polar_px_nodes;
 extern char *polar_px_ignore_function;
 extern PxFunctionOidArray *px_function_oid_array;
+extern bool	px_use_master;
 extern bool	px_use_standby;
 extern bool	polar_px_ignore_unusable_nodes;
 extern bool	polar_enable_send_node_info;

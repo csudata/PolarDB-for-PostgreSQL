@@ -355,8 +355,6 @@ extern char *DatabasePath;
 /* POLAR */
 extern char *polar_database_path;
 extern PGDLLIMPORT int planner_work_mem;
-extern PGDLLIMPORT int work_mem;
-extern PGDLLIMPORT int maintenance_work_mem;
 
 /* now in utils/init/miscinit.c */
 extern void InitPostmasterChild(void);

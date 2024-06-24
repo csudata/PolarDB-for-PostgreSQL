@@ -1006,9 +1006,11 @@ polar_reg_sub_task(polar_task_sched_ctl_t *ctl, uint32 i)
 	StrNCpy(worker.bgw_type, ctl->sched->name, BGW_MAXLEN);
 	worker.bgw_main_arg = (Datum)(ctl->sched);
 
-	RegisterDynamicBackgroundWorker(&worker, &handle);
-
-	Assert(handle != NULL);
+	if (!RegisterDynamicBackgroundWorker(&worker, &handle))
+		ereport(PANIC,
+				(errcode(ERRCODE_INSUFFICIENT_RESOURCES),
+				 errmsg("registering dynamic bgworker failed"),
+				 errhint("Consider increasing configuration parameter \"max_worker_processes\".")));
 
 	ctl->sub_proc[i].handle = handle;
 	ctl->sub_proc[i].proc = NULL;

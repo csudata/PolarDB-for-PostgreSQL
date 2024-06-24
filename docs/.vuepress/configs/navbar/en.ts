@@ -84,32 +84,18 @@ export const en: NavbarConfig = [
     text: "Dev",
     link: "/development/",
     children: [
-      {
-        text: "Development on Docker",
-        link: "/development/dev-on-docker.html",
-      },
-      {
-        text: "Customize Development Environment",
-        link: "/development/customize-dev-env.html",
-      },
+      "/development/dev-on-docker.html",
+      "/development/customize-dev-env.html",
     ],
   },
   {
     text: "Contributing",
     link: "/contributing/",
     children: [
-      {
-        text: "Contributing Docs",
-        link: "/contributing/contributing-polardb-docs.html",
-      },
-      {
-        text: "Contributing Code",
-        link: "/contributing/contributing-polardb-kernel.html",
-      },
-      {
-        text: "Coding Style",
-        link: "/contributing/coding-style.html",
-      },
+      "/contributing/contributing-polardb-docs.html",
+      "/contributing/contributing-polardb-kernel.html",
+      "/contributing/coding-style.html",
+      "/contributing/trouble-issuing.html",
     ],
   },
 ];

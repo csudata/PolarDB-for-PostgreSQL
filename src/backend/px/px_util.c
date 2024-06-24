@@ -158,11 +158,13 @@ fallback:
 		for (i = 0; i < count; i++)
 		{
 			item = &items[i];
-			if (item->type != POLAR_STANDBY && item->type != POLAR_REPLICA)
+			if (item->type != POLAR_MASTER && item->type != POLAR_REPLICA && item->type != POLAR_STANDBY)
+				continue;
+			if (item->type == POLAR_MASTER && !px_use_master)
 				continue;
 			if (item->type == POLAR_STANDBY && !px_use_standby)
 				continue;
-			if (item->state != STANDBY_SNAPSHOT_READY)
+			if (!(item->state == STANDBY_SNAPSHOT_READY || (item->type == POLAR_MASTER && px_use_master)))
 				continue;
 
 			config = &configs[idx];
@@ -191,9 +193,14 @@ fallback:
 
 			if (strcmp(item->name, node_name) == 0)
 			{
-				if (item->type != POLAR_STANDBY && item->type != POLAR_REPLICA)
+				if (item->type != POLAR_MASTER && item->type != POLAR_REPLICA && item->type != POLAR_STANDBY)
 				{
 					elog(error_level, "node %s is not useable for PX, consider adjust polar_px_nodes", node_name);
+					goto next;
+				}
+				if (item->type == POLAR_MASTER && !px_use_master)
+				{
+					elog(error_level, "node %s is master, but polar_px_use_master is off, consider adjust polar_px_nodes or enable polar_px_use_master", node_name);
 					goto next;
 				}
 				if (item->type == POLAR_STANDBY && !px_use_standby)
@@ -201,9 +208,9 @@ fallback:
 					elog(error_level, "node %s is standby, but polar_px_use_standby is off, consider adjust polar_px_nodes or enable polar_px_use_standby", node_name);
 					goto next;
 				}
-				if (item->state != STANDBY_SNAPSHOT_READY)
+				if (!(item->state == STANDBY_SNAPSHOT_READY || (item->type == POLAR_MASTER && !px_use_master)))
 				{
-					elog(error_level, "node %s is not ready for PX qeury, consider adjust polar_px_nodes", node_name);
+					elog(error_level, "node %s is not ready for PX query, consider adjust polar_px_nodes", node_name);
 					goto next;
 				}
 

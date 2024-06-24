@@ -121,18 +121,10 @@ export const zh: NavbarConfig = [
     text: "参与社区",
     link: "/zh/contributing/",
     children: [
-      {
-        text: "贡献文档",
-        link: "/zh/contributing/contributing-polardb-docs.html",
-      },
-      {
-        text: "贡献代码",
-        link: "/zh/contributing/contributing-polardb-kernel.html",
-      },
-      {
-        text: "编码风格",
-        link: "/zh/contributing/coding-style.html",
-      },
+      "/zh/contributing/contributing-polardb-docs.html",
+      "/zh/contributing/contributing-polardb-kernel.html",
+      "/zh/contributing/coding-style.html",
+      "/zh/contributing/trouble-issuing.md",
     ],
   },
 ];

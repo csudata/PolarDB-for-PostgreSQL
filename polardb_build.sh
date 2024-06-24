@@ -221,7 +221,7 @@ pg_bld_standby_data_dir=$pg_bld_prefix/tmp_standby_datadir_polardb_pg_1100_bld
 pg_bld_user=`whoami`
 pg_bld_port=5432
 pg_bld_rep_port=5433
-pg_bld_standby_port=5434
+pg_bld_standby_port=5435
 pg_db_user=postgres
 current_branch=`git rev-parse --abbrev-ref HEAD`
 if [[ $current_branch == "HEAD" ]];
@@ -624,7 +624,7 @@ then
           polar_enable_flashback_log = off" >> $pg_bld_master_dir/postgresql.conf
     echo "polar_enable_dma = on
           polar_dma_repl_user = $pg_db_user" >> $pg_bld_master_dir/polar_dma.conf
-    su_eval "$pg_bld_basedir/bin/postgres -D $pg_bld_master_dir -p $pg_bld_port -c polar_dma_init_meta=ON -c polar_dma_members_info=\"localhost:$pg_bld_port@1\""
+    su_eval "$pg_bld_basedir/bin/postgres -D $pg_bld_master_dir -p $pg_bld_port -c polar_dma_init_meta=ON -c polar_dma_members_info=\"127.0.0.1:$pg_bld_port@1\""
   fi
 fi
 
@@ -638,7 +638,7 @@ then
   echo "polar_hostid = 2" >> $pg_bld_replica_dir/postgresql.conf
   echo "synchronous_standby_names='replica1'" >> $pg_bld_master_dir/postgresql.conf
 
-  echo "primary_conninfo = 'host=localhost port=$pg_bld_port user=$pg_db_user dbname=postgres application_name=replica1'" >> $pg_bld_replica_dir/recovery.conf
+  echo "primary_conninfo = 'host=127.0.0.1 port=$pg_bld_port user=$pg_db_user dbname=postgres application_name=replica1'" >> $pg_bld_replica_dir/recovery.conf
   echo "polar_replica = on" >> $pg_bld_replica_dir/recovery.conf
   echo "recovery_target_timeline = 'latest'" >> $pg_bld_replica_dir/recovery.conf
   echo "primary_slot_name = 'replica1'" >> $pg_bld_replica_dir/recovery.conf
@@ -672,7 +672,7 @@ then
       polar_enable_lazy_checkpoint = off" >> $pg_bld_standby_dir/postgresql.conf
   fi
 
-  echo "primary_conninfo = 'host=localhost port=$pg_bld_port user=$pg_db_user dbname=postgres application_name=standby1'" >> $pg_bld_standby_dir/recovery.conf
+  echo "primary_conninfo = 'host=127.0.0.1 port=$pg_bld_port user=$pg_db_user dbname=postgres application_name=standby1'" >> $pg_bld_standby_dir/recovery.conf
   echo "standby_mode = on" >> $pg_bld_standby_dir/recovery.conf
   echo "recovery_target_timeline = 'latest'" >> $pg_bld_standby_dir/recovery.conf
   echo "primary_slot_name = 'standby1'" >> $pg_bld_standby_dir/recovery.conf
@@ -734,7 +734,7 @@ then
       fi
     fi
 
-    echo "primary_conninfo = 'host=localhost port=$pg_bld_port user=$pg_db_user dbname=postgres application_name=replica${i}'" >> $pg_bld_replica_dir_n/recovery.conf
+    echo "primary_conninfo = 'host=127.0.0.1 port=$pg_bld_port user=$pg_db_user dbname=postgres application_name=replica${i}'" >> $pg_bld_replica_dir_n/recovery.conf
     echo "primary_slot_name = 'replica${i}'" >> $pg_bld_replica_dir_n/recovery.conf
     # su_eval "env $pg_bld_basedir/bin/psql -h 127.0.0.1 -d postgres -U $pg_db_user -c \"SELECT * FROM pg_create_physical_replication_slot('replica${i}')\""
     su_eval "$pg_bld_basedir/bin/pg_ctl -D $pg_bld_replica_dir_n start -w -c"
@@ -804,9 +804,9 @@ if [[ $withstandby == "yes" ]];
 then
   su_eval "env  $pg_bld_basedir/bin/psql -h 127.0.0.1 -d postgres -p $pg_bld_port -U $pg_db_user -c \"SELECT * FROM pg_create_physical_replication_slot('standby1')\""
   sleep 2
-          rm -fr $pg_bld_standby_data_dir
-          cp -frp $pg_bld_data_dir $pg_bld_standby_data_dir
-          sed -i -E "s/${pg_bld_data_dir//\//\\/}/${pg_bld_standby_data_dir//\//\\/}/" $pg_bld_standby_dir/postgresql.conf
+  rm -fr $pg_bld_standby_data_dir
+  cp -frp $pg_bld_data_dir $pg_bld_standby_data_dir
+  sed -i -E "s/${pg_bld_data_dir//\//\\/}/${pg_bld_standby_data_dir//\//\\/}/" $pg_bld_standby_dir/postgresql.conf
   su_eval "$pg_bld_basedir/bin/pg_ctl -D $pg_bld_standby_dir start -w -c -o '-p $pg_bld_standby_port'"
 fi
 

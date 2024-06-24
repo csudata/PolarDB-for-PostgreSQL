@@ -12,7 +12,7 @@ PolarDB for PostgreSQL 的文档使用 [VuePress 2](https://v2.vuepress.vuejs.or
 
 ## 本地文档开发
 
-若您发现文档中存在内容或格式错误，或者您希望能够贡献新文档，那么您需要在本地安装并配置文档开发环境。本项目的文档是一个 Node.js 工程，以 [Yarn](https://yarnpkg.com/) 作为软件包管理器。[Node.js®](https://nodejs.org/en/) 是一个基于 Chrome V8 引擎的 JavaScript 运行时环境。
+若您发现文档中存在内容或格式错误，或者您希望能够贡献新文档，那么您需要在本地安装并配置文档开发环境。本项目的文档是一个 Node.js 工程，以 [pnpm](https://pnpm.io/) 作为软件包管理器。[Node.js®](https://nodejs.org/en/) 是一个基于 Chrome V8 引擎的 JavaScript 运行时环境。
 
 ### Node 环境准备
 
@@ -40,19 +40,19 @@ node -v
 npm -v
 ```
 
-使用 `npm` 全局安装软件包管理器 `yarn`：
+使用 `npm` 全局安装软件包管理器 `pnpm`：
 
 ```bash:no-line-numbers
-npm install -g yarn
-yarn -v
+npm install -g pnpm
+pnpm -v
 ```
 
 ### 文档依赖安装
 
-在 PolarDB for PostgreSQL 工程的根目录下运行以下命令，`yarn` 将会根据 `package.json` 安装所有依赖：
+在 PolarDB for PostgreSQL 工程的根目录下运行以下命令，`pnpm` 将会根据 `package.json` 安装所有依赖：
 
 ```bash:no-line-numbers
-yarn
+pnpm install
 ```
 
 ### 运行文档开发服务器
@@ -60,7 +60,7 @@ yarn
 在 PolarDB for PostgreSQL 工程的根目录下运行以下命令：
 
 ```bash:no-line-numbers
-yarn docs:dev
+pnpm run docs:dev
 ```
 
 文档开发服务器将运行于 `http://localhost:8080/PolarDB-for-PostgreSQL/`，打开浏览器即可访问。对 Markdown 文件作出修改后，可以在网页上实时查看变化。
@@ -94,7 +94,7 @@ PolarDB for PostgreSQL 的文档资源位于工程根目录的 `docs/` 目录下
 
 `.vuepress/` 目录下包含文档工程的全局配置信息：
 
-- `config.js`：文档配置
+- `config.ts`：文档配置
 - `configs/`：文档配置模块（导航栏 / 侧边栏、英文 / 中文等配置）
 - `public/`：公共静态资源
 - `styles/`：文档主题默认样式覆盖

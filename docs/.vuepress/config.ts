@@ -1,13 +1,16 @@
-import { defineUserConfig } from "@vuepress/cli";
+import { defineUserConfig } from "vuepress";
+import { path } from "vuepress/utils";
 import { defaultTheme } from "@vuepress/theme-default";
 import { docsearchPlugin } from "@vuepress/plugin-docsearch";
 import { mdEnhancePlugin } from "vuepress-plugin-md-enhance";
 import { registerComponentsPlugin } from "@vuepress/plugin-register-components";
 import { navbar, sidebar } from "./configs";
-import { path } from "@vuepress/utils";
+import { viteBundler } from "@vuepress/bundler-vite";
 
 export default defineUserConfig({
   base: "/PolarDB-for-PostgreSQL/",
+
+  bundler: viteBundler(),
 
   head: [
     ["link", { rel: "icon", href: "/PolarDB-for-PostgreSQL/favicon.ico" }],
@@ -121,6 +124,7 @@ export default defineUserConfig({
       },
     }),
     mdEnhancePlugin({
+      katex: true,
       footnote: true,
     }),
     registerComponentsPlugin({

@@ -11,7 +11,7 @@ const { frontmatter } = toRefs(props);
 </script>
 
 <style>
-.line {
+.info_line {
   display: flex;
   flex-direction: row;
   align-items: center;
@@ -28,8 +28,8 @@ const { frontmatter } = toRefs(props);
 </style>
 
 <template>
-  <div class="line">
-    <div v-if="frontmatter.author" class="line container">
+  <div class="info_line">
+    <div v-if="frontmatter.author" class="info_line container">
       <svg
         t="1658821554263"
         class="icon"
@@ -48,7 +48,7 @@ const { frontmatter } = toRefs(props);
       </svg>
       <p class="text">{{ frontmatter.author }}</p>
     </div>
-    <div v-if="frontmatter.date" class="line container">
+    <div v-if="frontmatter.date" class="info_line container">
       <svg
         t="1658821678607"
         class="icon"
@@ -72,7 +72,7 @@ const { frontmatter } = toRefs(props);
       </svg>
       <p class="text">{{ frontmatter.date }}</p>
     </div>
-    <div v-if="frontmatter.minute" class="line container">
+    <div v-if="frontmatter.minute" class="info_line container">
       <svg
         t="1658821512864"
         class="icon"

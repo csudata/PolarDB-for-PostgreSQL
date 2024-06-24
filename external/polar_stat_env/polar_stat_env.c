@@ -23,19 +23,18 @@
  *-------------------------------------------------------------------------
  */
 #include "postgres.h"
+
+#include "access/xlog.h"
+#include "commands/explain.h"
 #include "funcapi.h"
+#include "miscadmin.h"
 #include "utils/builtins.h"
-#include "utils/memutils.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "utils/guc.h"
-#include "commands/explain.h"
-#include "fmgr.h"
 
-#ifdef PG_MODULE_MAGIC
 PG_MODULE_MAGIC;
-#endif
 
 const char *cpu_commands[][2] =
 {
@@ -118,7 +117,7 @@ exec_collect_command(const char *command, StringInfoData *result)
 }
 
 static void
-polar_collect_cpu(ExplainState *es)
+collect_cpu(ExplainState *es)
 {
 	bool		success = false;
 	StringInfoData cur_data;
@@ -148,7 +147,7 @@ polar_collect_cpu(ExplainState *es)
 }
 
 static void
-polar_collect_mem(ExplainState *es)
+collect_mem(ExplainState *es)
 {
 	bool		success = false;
 	StringInfoData cur_data;
@@ -178,7 +177,7 @@ polar_collect_mem(ExplainState *es)
 }
 
 static void
-polar_collect_os(ExplainState *es)
+collect_os(ExplainState *es)
 {
 	bool		success = false;
 	StringInfoData cur_data;
@@ -208,16 +207,40 @@ polar_collect_os(ExplainState *es)
 }
 
 static void
-polar_collect_env(ExplainState *es)
+collect_node_type(ExplainState *es)
+{
+	static const char *role = "Role";
+
+	switch (polar_node_type())
+	{
+		case POLAR_MASTER:
+			ExplainPropertyText(role, "Primary", es);
+			break;
+		case POLAR_REPLICA:
+			ExplainPropertyText(role, "Replica", es);
+			break;
+		case POLAR_STANDBY:
+			ExplainPropertyText(role, "Standby", es);
+			break;
+		default:
+			ExplainPropertyText(role, "Unknown", es);
+			break;
+	}
+}
+
+static void
+collect_all(ExplainState *es)
 {
 	ExplainBeginOutput(es);
 
+	collect_node_type(es);
+
 	/* Collect CPU info */
-	polar_collect_cpu(es);
+	collect_cpu(es);
 	/* Collect memory info */
-	polar_collect_mem(es);
+	collect_mem(es);
 	/* Collect OS info */
-	polar_collect_os(es);
+	collect_os(es);
 
 	ExplainEndOutput(es);
 
@@ -233,13 +256,39 @@ polar_collect_env(ExplainState *es)
 	}
 }
 
-static text *
+static Datum
 stat_env(FunctionCallInfo fcinfo, bool need_newline)
 {
+	ReturnSetInfo *rsinfo = (ReturnSetInfo *) fcinfo->resultinfo;
+	TupleDesc	tupdesc;
+	Tuplestorestate *tupstore;
+	MemoryContext oldcontext;
 	text	   *format_txt = PG_GETARG_TEXT_PP(0);
 	char	   *format = text_to_cstring(format_txt);
-	text	   *result_text;
 	ExplainState *es = NewExplainState();
+
+	/* check to see if caller supports us returning a tuplestore */
+	if (rsinfo == NULL || !IsA(rsinfo, ReturnSetInfo))
+		ereport(ERROR,
+				(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
+				 errmsg("set-valued function called in context that cannot accept a set")));
+	if (!(rsinfo->allowedModes & SFRM_Materialize))
+		ereport(ERROR,
+				(errcode(ERRCODE_SYNTAX_ERROR),
+				 errmsg("materialize mode required, but it is not allowed in this context")));
+
+	/* Build tuplestore to hold the result rows */
+	oldcontext = MemoryContextSwitchTo(rsinfo->econtext->ecxt_per_query_memory);
+
+	tupdesc = CreateTemplateTupleDesc(1, false);
+	TupleDescInitEntry(tupdesc, (AttrNumber) 1, "nodeenv",
+					   TEXTOID, -1, 0);
+	tupstore = tuplestore_begin_heap(true, false, work_mem);
+	rsinfo->returnMode = SFRM_Materialize;
+	rsinfo->setResult = tupstore;
+	rsinfo->setDesc = tupdesc;
+
+	MemoryContextSwitchTo(oldcontext);
 
 	if (strcmp(format, "text") == 0)
 		es->format = EXPLAIN_FORMAT_TEXT;
@@ -255,24 +304,25 @@ stat_env(FunctionCallInfo fcinfo, bool need_newline)
 				 errmsg("unrecognized value for output format: \"%s\"", format)));
 	pfree(format);
 
-	polar_collect_env(es);
+	collect_all(es);
 
 	if (!need_newline && es && es->str)
 		remove_newlines(es->str->data);
 
-	result_text = cstring_to_text_with_len(es->str->data, es->str->len);
-
+	tuplestore_puttuple(tupstore,
+						BuildTupleFromCStrings(TupleDescGetAttInMetadata(tupdesc),
+											   &es->str->data));
 	pfree(es->str->data);
 	pfree(es);
 
-	return result_text;
+	return (Datum) 0;
 }
 
 PG_FUNCTION_INFO_V1(polar_stat_env);
 Datum
 polar_stat_env(PG_FUNCTION_ARGS)
 {
-	PG_RETURN_TEXT_P(stat_env(fcinfo, true));
+	return stat_env(fcinfo, true);
 }
 
 /*
@@ -284,5 +334,5 @@ PG_FUNCTION_INFO_V1(polar_stat_env_no_format);
 Datum
 polar_stat_env_no_format(PG_FUNCTION_ARGS)
 {
-	PG_RETURN_TEXT_P(stat_env(fcinfo, false));
+	return stat_env(fcinfo, false);
 }

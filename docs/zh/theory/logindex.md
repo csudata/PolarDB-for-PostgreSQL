@@ -80,7 +80,7 @@ LogIndex 实质为一个 HashTable 结构，其 key 为 PageTag，可标识一�
 
 ![image.png](../imgs/58_LogIndex_10.png)
 
-由 [Buffer 管理](./buffer-management.md) 可知，一致性位点之前的所有 WAL 日志修改的数据页均已持久化到共享存储中，RO 节点无需回放该位点之前的 WAL 日志，故 LogIndex Table 中小于一致性位点的 LSN 均可清除。RW 据此 Truncate 掉存储上不再使用的 LogIndex Table，在加速 RO 回放效率的同时还可减少 LogIndex Table 占用的空间。
+由 [Buffer 管理](./buffer-management.md) 可知，一致性位点之前的所有 WAL 日志修改的数据页均已持久化到共享存储中，RO 节点通过流复制向 RW 节点反馈当前回放的位点和当前使用的最小 WAL 日志位点，故 LogIndex Table 中小于两个位点的 LSN 均可清除。RW 据此 Truncate 掉存储上不再使用的 LogIndex Table，在加速 RO 回放效率的同时还可减少 LogIndex Table 占用的空间。
 
 ## 日志回放
 
@@ -90,6 +90,7 @@ LogIndex 机制下，RO 节点的 Startup 进程基于接收到的 WAL Meta 生�
 
 - 背景回放进程按照 WAL 顺序依次进行日志回放操作，根据要回放的 LSN 检索 LogIndex Memtable 及 LogIndex Table，获取该 LSN 修改的 Page List，若某个 Page 存在于 Buffer Pool 中则对其进行回放，否则直接跳过。背景回放进程按照 LSN 的顺序逐步推进 Buffer Pool 中的页面位点，避免单个 Page 需要回放的 LSN 数量堆积太多；
 - Backend 进程则仅对其实际需要访问的 Page 进行回放，当 Backend 进程需要访问一个 Page 时，如果该 Page 在 Buffer Pool 中不存在，则将该 Page 读到 Buffer Pool 后进行回放；如果该 Page 已经在 Buffer Pool 中且标记为 outdate，则将该 Page 回放到最新。Backend 进程依据 Page TAG 对 LogIndex Memtable 及 LogIndex Table 进行检索，按序生成与该 Page 相关的 LSN List，基于 LSN List 从共享存储中读取完整的 WAL 日志来对该 Page 进行回放。
+- 由上述两点可知：背景回放进程和 Backend 进程均会检索 Logindex，并使用 LogIndex 中记录的信息对 Page 执行回放操作。这两类进程均有一个当前正在回放的 WAL 日志位点信息，因此，我们定义背景回放进程和所有的 Backend 进程正在回放的 WAL 日志位点信息的最小值，为该 RO 节点当前正在使用的最小 WAL 日志位点。RO 节点通过流复制将该位点信息回传给 RW 节点，RW 节点据此来判断存储上的 LogIndex Table 是否可以删除。
 
 ![image.png](../imgs/59_LogIndex_11.png)
 
