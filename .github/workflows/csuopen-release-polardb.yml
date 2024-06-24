@@ -75,19 +75,6 @@ jobs:
           basePath=$(cd `dirname $0`; pwd)
           dependence_path=$basePath/dependencies
 
-          cd $dependence_path
-          echo "copy依赖libssl.so.1.1和libcrypto.so.1.1"
-          if [ ! -e "/usr/polardb/lib/libssl.so.1.1" ];then
-              cp libs/libssl.so.1.1 /usr/polardb/lib
-          fi
-          if [ ! -e "/usr/polardb/lib/libcrypto.so.1.1" ];then
-              cp libs/libcrypto.so.1.1 /usr/polardb/lib
-          fi
-          if [ ! -e "/usr/polardb/lib/libxerces-c-3.1.so" ];then
-              cp libs/libxerces-c-3.1.so /usr/polardb/lib/libxerces-c-3.1.so
-          fi
-
-
           echo "安装zlog"
           cd $dependence_path/zlog-1.2.16
           if [ ! -e "/usr/local/include/zlog.h" ];then
@@ -122,6 +109,19 @@ jobs:
           cd $basePath
           tar xkf polardb.tar -C /usr/polardb --strip-components=1 >> /dev/null
           echo "Polardb安装完成"
+
+          cd $dependence_path
+          echo "copy依赖libssl.so.1.1和libcrypto.so.1.1"
+          if [ ! -e "/usr/polardb/lib/libssl.so.1.1" ];then
+              cp libs/libssl.so.1.1 /usr/polardb/lib
+          fi
+          if [ ! -e "/usr/polardb/lib/libcrypto.so.1.1" ];then
+              cp libs/libcrypto.so.1.1 /usr/polardb/lib
+          fi
+          if [ ! -e "/usr/polardb/lib/libxerces-c-3.1.so" ];then
+              cp libs/libxerces-c-3.1.so /usr/polardb/lib/libxerces-c-3.1.so
+          fi
+          
           EOF
       - name: Tar PolarDB
         run: |
@@ -201,18 +201,6 @@ jobs:
           basePath=$(cd `dirname $0`; pwd)
           dependence_path=$basePath/dependencies
 
-          cd $dependence_path
-          echo "copy依赖libssl.so.1.1和libcrypto.so.1.1"
-          if [ ! -e "/usr/polardb/lib/libssl.so.1.1" ];then
-              cp libs/libssl.so.1.1 /usr/polardb/lib
-          fi
-          if [ ! -e "/usr/polardb/lib/libcrypto.so.1.1" ];then
-              cp libs/libcrypto.so.1.1 /usr/polardb/lib
-          fi
-          if [ ! -e "/usr/polardb/lib/libxerces-c-3.1.so" ];then
-              cp libs/libxerces-c-3.1.so /usr/polardb/lib/libxerces-c-3.1.so
-          fi
-
           echo "安装zlog"
           cd $dependence_path/zlog-1.2.16
           if [ ! -e "/usr/local/include/zlog.h" ];then
@@ -247,6 +235,19 @@ jobs:
           cd $basePath
           tar xkf polardb.tar -C /usr/polardb --strip-components=1 >> /dev/null
           echo "Polardb安装完成"
+
+          cd $dependence_path
+          echo "copy依赖libssl.so.1.1和libcrypto.so.1.1"
+          if [ ! -e "/usr/polardb/lib/libssl.so.1.1" ];then
+              cp libs/libssl.so.1.1 /usr/polardb/lib
+          fi
+          if [ ! -e "/usr/polardb/lib/libcrypto.so.1.1" ];then
+              cp libs/libcrypto.so.1.1 /usr/polardb/lib
+          fi
+          if [ ! -e "/usr/polardb/lib/libxerces-c-3.1.so" ];then
+              cp libs/libxerces-c-3.2.so /usr/polardb/lib/libxerces-c-3.1.so
+          fi
+          
           EOF
       - name: Tar PolarDB
         run: |
@@ -326,18 +327,6 @@ jobs:
           basePath=$(cd `dirname $0`; pwd)
           dependence_path=$basePath/dependencies
 
-          cd $dependence_path
-          echo "copy依赖libssl.so.1.1和libcrypto.so.1.1"
-          if [ ! -e "/usr/polardb/lib/libssl.so.1.1" ];then
-              cp libs/libssl.so.1.1 /usr/polardb/lib
-          fi
-          if [ ! -e "/usr/polardb/lib/libcrypto.so.1.1" ];then
-              cp libs/libcrypto.so.1.1 /usr/polardb/lib
-          fi
-          if [ ! -e "/usr/polardb/lib/libxerces-c-3.1.so" ];then
-              cp libs/libxerces-c-3.1.so /usr/polardb/lib/libxerces-c-3.1.so
-          fi
-
           echo "安装zlog"
           cd $dependence_path/zlog-1.2.16
           if [ ! -e "/usr/local/include/zlog.h" ];then
@@ -372,6 +361,19 @@ jobs:
           cd $basePath
           tar xkf polardb.tar -C /usr/polardb --strip-components=1 >> /dev/null
           echo "Polardb安装完成"
+
+          cd $dependence_path
+          echo "copy依赖libssl.so.1.1和libcrypto.so.1.1"
+          if [ ! -e "/usr/polardb/lib/libssl.so.1.1" ];then
+              cp libs/libssl.so.3.0.7 /usr/polardb/lib
+          fi
+          if [ ! -e "/usr/polardb/lib/libcrypto.so.1.1" ];then
+              cp libs/libcrypto.so.3.0.7 /usr/polardb/lib
+          fi
+          if [ ! -e "/usr/polardb/lib/libxerces-c-3.1.so" ];then
+              cp libs/libxerces-c-3.2.so /usr/polardb/lib/libxerces-c-3.1.so
+          fi
+          
           EOF
       - name: Tar PolarDB
         run: |
